@@ -1,10 +1,10 @@
-package hlb_load_balancer
+package hlb_listener_attachment
 
 import "github.com/crossplane/upjet/pkg/config"
 
 // Configure configures individual resources by adding custom ResourceConfigurators.
 func Configure(p *config.Provider) {
-    p.AddResourceConfigurator("hlb_load_balancer", func(r *config.Resource) {
+    p.AddResourceConfigurator("hlb_listener_attachment", func(r *config.Resource) {
         // We need to override the default group that upjet generated for
         // this resource, which would be "github"
         r.ShortGroup = "hlb"

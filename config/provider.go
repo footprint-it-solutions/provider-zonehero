@@ -10,7 +10,7 @@ import (
 
 	ujconfig "github.com/crossplane/upjet/pkg/config"
 
-	"github.com/footprint-it-solutions/provider-zonehero/config/hlb_load_balancer"
+	"github.com/footprint-it-solutions/provider-zonehero/config/hlb_listener_attachment"
 )
 
 const (
@@ -36,7 +36,7 @@ func GetProvider() *ujconfig.Provider {
 
 	for _, configure := range []func(provider *ujconfig.Provider){
 		// add custom config functions
-		hlb_load_balancer.Configure,
+		hlb_listener_attachment.Configure,
 	} {
 		configure(pc)
 	}
