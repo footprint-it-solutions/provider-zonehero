@@ -1,4 +1,4 @@
-module github.com/upbound/upjet-provider-template
+module github.com/footprint-it-solutions/provider-zonehero
 
 go 1.21
 

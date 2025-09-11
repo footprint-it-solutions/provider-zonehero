@@ -15,7 +15,7 @@ import (
 
 	"github.com/crossplane/upjet/pkg/terraform"
 
-	"github.com/upbound/upjet-provider-template/apis/v1beta1"
+	"github.com/footprint-it-solutions/provider-zonehero/apis/v1beta1"
 )
 
 const (
@@ -24,7 +24,12 @@ const (
 	errGetProviderConfig    = "cannot get referenced ProviderConfig"
 	errTrackUsage           = "cannot track ProviderConfig usage"
 	errExtractCredentials   = "cannot extract credentials"
-	errUnmarshalCredentials = "cannot unmarshal template credentials as JSON"
+	errUnmarshalCredentials = "cannot unmarshal zonehero credentials as JSON"
+
+	api_key     = "your-api-key"
+	aws_region  = "eu-west-1"
+	aws_profile = "default"
+	partition   = "aws"
 )
 
 // TerraformSetupBuilder builds Terraform a terraform.SetupFn function which
@@ -67,6 +72,20 @@ func TerraformSetupBuilder(version, providerSource, providerVersion string) terr
 			"username": creds["username"],
 			"password": creds["password"],
 		}*/
+
+		if v, ok := creds[api_key]; ok {
+			ps.Configuration[api_key] = v
+		}
+		if v, ok := creds[aws_region]; ok {
+			ps.Configuration[aws_region] = v
+		}
+		if v, ok := creds[aws_profile]; ok {
+			ps.Configuration[aws_profile] = v
+		}
+		if v, ok := creds[partition]; ok {
+			ps.Configuration[partition] = v
+		}
+
 		return ps, nil
 	}
 }
