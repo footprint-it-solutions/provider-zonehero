@@ -4,9 +4,9 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.14.0
-  name: providerconfigusages.zonehero.upbound.io
+  name: providerconfigusages.zonehero.footprintit.net
 spec:
-  group: zonehero.upbound.io
+  group: zonehero.footprintit.net
   names:
     categories:
     - crossplane

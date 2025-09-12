@@ -10,7 +10,7 @@ export TERRAFORM_VERSION ?= 1.5.7
 # licensed under BSL, which is not permitted.
 TERRAFORM_VERSION_VALID := $(shell [ "$(TERRAFORM_VERSION)" = "`printf "$(TERRAFORM_VERSION)\n1.6" | sort -V | head -n1`" ] && echo 1 || echo 0)
 
-export TERRAFORM_PROVIDER_SOURCE ?= footprint-it-solutions/footprint-hlb
+export TERRAFORM_PROVIDER_SOURCE ?= footprint-it-solutions/hlb
 export TERRAFORM_PROVIDER_REPO ?= https://github.com/footprint-it-solutions/terraform-provider-hlb.git
 export TERRAFORM_PROVIDER_VERSION ?= 0.1.0
 export TERRAFORM_PROVIDER_DOWNLOAD_NAME ?= hlb

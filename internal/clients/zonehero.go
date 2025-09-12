@@ -68,23 +68,25 @@ func TerraformSetupBuilder(version, providerSource, providerVersion string) terr
 		}
 
 		// Set credentials in Terraform provider configuration.
-		/*ps.Configuration = map[string]any{
-			"username": creds["username"],
-			"password": creds["password"],
-		}*/
+		ps.Configuration = map[string]any{
+			"api_key": 		creds["api_key"],
+			"aws_region": 	creds["aws_region"],
+			"aws_profile": 	creds["aws_profile"],
+			"partition": 	creds["partition"],
+		}
 
-		if v, ok := creds[api_key]; ok {
-			ps.Configuration[api_key] = v
-		}
-		if v, ok := creds[aws_region]; ok {
-			ps.Configuration[aws_region] = v
-		}
-		if v, ok := creds[aws_profile]; ok {
-			ps.Configuration[aws_profile] = v
-		}
-		if v, ok := creds[partition]; ok {
-			ps.Configuration[partition] = v
-		}
+		// if v, ok := creds[api_key]; ok {
+		// 	ps.Configuration[api_key] = v
+		// }
+		// if v, ok := creds[aws_region]; ok {
+		// 	ps.Configuration[aws_region] = v
+		// }
+		// if v, ok := creds[aws_profile]; ok {
+		// 	ps.Configuration[aws_profile] = v
+		// }
+		// if v, ok := creds[partition]; ok {
+		// 	ps.Configuration[partition] = v
+		// }
 
 		return ps, nil
 	}

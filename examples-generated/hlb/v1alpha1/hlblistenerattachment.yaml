@@ -1,0 +1,17 @@
+apiVersion: hlb.footprintit.net/v1alpha1
+kind: HLBListenerAttachment
+metadata:
+  annotations:
+    meta.upbound.io/example-id: hlb/v1alpha1/hlblistenerattachment
+  labels:
+    testing.upbound.io/example-name: front_end
+  name: front-end
+spec:
+  forProvider:
+    alpnPolicy: HTTP2Preferred
+    certificate_secrets_arn: arn:aws:secretsmanager:us-west-2:123456789012:secret:my-certificate-secret-123abc
+    loadBalancerId: ${hlb_load_balancer.example.id}
+    overprovisioningFactor: 1.1
+    port: 443
+    protocol: HTTPS
+    targetGroupArn: ${aws_lb_target_group.front_end.arn}

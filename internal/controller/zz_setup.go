@@ -9,7 +9,8 @@ import (
 
 	"github.com/crossplane/upjet/pkg/controller"
 
-	resource "github.com/footprint-it-solutions/provider-zonehero/internal/controller/null/resource"
+	hlblistenerattachment "github.com/footprint-it-solutions/provider-zonehero/internal/controller/hlb/hlblistenerattachment"
+	hostedloadbalancer "github.com/footprint-it-solutions/provider-zonehero/internal/controller/hlb/hostedloadbalancer"
 	providerconfig "github.com/footprint-it-solutions/provider-zonehero/internal/controller/providerconfig"
 )
 
@@ -17,7 +18,8 @@ import (
 // the supplied manager.
 func Setup(mgr ctrl.Manager, o controller.Options) error {
 	for _, setup := range []func(ctrl.Manager, controller.Options) error{
-		resource.Setup,
+		hlblistenerattachment.Setup,
+		hostedloadbalancer.Setup,
 		providerconfig.Setup,
 	} {
 		if err := setup(mgr, o); err != nil {

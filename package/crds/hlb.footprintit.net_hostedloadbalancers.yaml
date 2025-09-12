@@ -1,0 +1,839 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.14.0
+  name: hostedloadbalancers.hlb.footprintit.net
+spec:
+  group: hlb.footprintit.net
+  names:
+    categories:
+    - crossplane
+    - managed
+    - zonehero
+    kind: HostedLoadBalancer
+    listKind: HostedLoadBalancerList
+    plural: hostedloadbalancers
+    singular: hostedloadbalancer
+  scope: Cluster
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .status.conditions[?(@.type=='Synced')].status
+      name: SYNCED
+      type: string
+    - jsonPath: .status.conditions[?(@.type=='Ready')].status
+      name: READY
+      type: string
+    - jsonPath: .metadata.annotations.crossplane\.io/external-name
+      name: EXTERNAL-NAME
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: AGE
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: 'HostedLoadBalancer is the Schema for the HostedLoadBalancers
+          API. Manages a Hero Load Balancer (HLB) resource. HLB is a managed load
+          balancer service that distributes incoming application traffic across multiple
+          targets, such as EC2 instances, in multiple Availability Zones. This resource
+          allows you to create and manage load balancers with features like: HTTP/2
+          supportAccess loggingCross-zone load balancingCustom launch configurationsFlexible
+          IP address types For detailed documentation and examples, see the HLB Provider
+          Documentation ../index.md.'
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: HostedLoadBalancerSpec defines the desired state of HostedLoadBalancer
+            properties:
+              deletionPolicy:
+                default: Delete
+                description: |-
+                  DeletionPolicy specifies what will happen to the underlying external
+                  when this managed resource is deleted - either "Delete" or "Orphan" the
+                  external resource.
+                  This field is planned to be deprecated in favor of the ManagementPolicies
+                  field in a future release. Currently, both could be set independently and
+                  non-default values would be honored if the feature flag is enabled.
+                  See the design doc for more information: https://github.com/crossplane/crossplane/blob/499895a25d1a1a0ba1604944ef98ac7a1a71f197/design/design-doc-observe-only-resources.md?plain=1#L223
+                enum:
+                - Orphan
+                - Delete
+                type: string
+              forProvider:
+                properties:
+                  clientKeepAlive:
+                    description: |-
+                      604800 seconds, default 3600). This setting determines how long the load balancer maintains idle keepalive connections with clients. Longer values can improve performance by reducing connection establishment overhead, but consume more resources.
+                      The time in seconds to keep client connections alive (60-604800 seconds, default 3600). This setting determines how long the load balancer maintains idle keepalive connections with clients. Longer values can improve performance by reducing connection establishment overhead, but consume more resources.
+                    type: number
+                  connectionDrainingTimeout:
+                    description: |-
+                      in event occurs, load balancer nodes are taken out of the DNS record immediately but we wait for connection_draining_timeout minutes before terminating the instances. This is most useful with HTTP clients that do not respect DNS TLL.
+                      When a scale-in event occurs, load balancer nodes are taken out of the DNS record immediately but we wait for `connection_draining_timeout` minutes before terminating the instances. This is most useful with HTTP clients that do not respect DNS TLL.
+                    type: number
+                  ec2IamRole:
+                    description: |-
+                      (String) Allows the user to assign a role permitting root access to proxy instances via AWS SSM. It is stronly discouraged to change this value as this compromises security on many levels. Use only to perfom audits. Valid values are:
+                      Allows the user to assign a role permitting root access to proxy instances via AWS SSM. It is *stronly discouraged* to change this value as this compromises security on many levels. Use only to perfom audits. Valid values are:
+                      * `lb-standard` (default)
+                      * `lb-ssm`
+                      The role will only be applied to newly created proxy instances, you must trigger an Autoscaling Group Instance Refresh manually for this change to take effect immediately.
+                    type: string
+                  enableCrossZoneLoadBalancing:
+                    description: |-
+                      (String) Configures how the load balancer distributes traffic between Availability Zones. Valid values:
+                      Configures how the load balancer distributes traffic between Availability Zones. Valid values:
+
+
+                      * `full` - Distributes traffic evenly across all instances in all zones
+                      * `avoid` (default) - Attempts to distribute traffic within a zone first, only sending cross-zone traffic when necessary
+                      * `off` - Keeps traffic within the same zone
+
+
+                      The `avoid` mode helps optimize for both availability and performance while minimizing cross-AZ data transfer costs.
+                    type: string
+                  enableDeletionProtection:
+                    description: |-
+                      (Boolean) If true, deletion of the load balancer will be disabled via the API. This prevents accidental deletion of production load balancers. You must set this to false and apply the change before you can delete the load balancer.
+                      If true, deletion of the load balancer will be disabled via the API. This prevents accidental deletion of production load balancers. You must set this to false and apply the change before you can delete the load balancer.
+                    type: boolean
+                  enableHttp2:
+                    description: |-
+                      (Boolean) Indicates whether HTTP/2 is enabled. HTTP/2 provides improved performance through features like multiplexing, header compression, and server push. Enabled by default. Only disable this if you have specific compatibility requirements with HTTP/1.x.
+                      Indicates whether HTTP/2 is enabled. HTTP/2 provides improved performance through features like multiplexing, header compression, and server push. Enabled by default. Only disable this if you have specific compatibility requirements with HTTP/1.x.
+                    type: boolean
+                  idleTimeout:
+                    description: |-
+                      4000 seconds. Default is 60 seconds. Increase this if your application requires longer-lived idle connections.
+                      The time in seconds that a connection is allowed to be idle (no data transfer) before it is closed by the load balancer. Valid values are 1-4000 seconds. Default is 60 seconds. Increase this if your application requires longer-lived idle connections.
+                    type: number
+                  internal:
+                    description: |-
+                      (Boolean) If true, the load balancer will be internal (private). Internal load balancers route traffic within your VPC and are not accessible from the internet. Use this for internal services or when you want to restrict access to your VPC. This cannot be changed after creation.
+                      If true, the load balancer will be internal (private). Internal load balancers route traffic within your VPC and are not accessible from the internet. Use this for internal services or when you want to restrict access to your VPC. This cannot be changed after creation.
+                    type: boolean
+                  ipAddressType:
+                    description: |-
+                      (String) The type of IP addresses used by the subnets for your load balancer. Valid values:
+                      The type of IP addresses used by the subnets for your load balancer. Valid values:
+
+
+                      * `ipv4` (default) - The load balancer has IPv4 addresses only
+                      * `dualstack` - The load balancer has both IPv4 and IPv6 addresses
+                      * `dualstack-without-public-ipv4` - The load balancer has IPv6 addresses and private IPv4 addresses
+
+
+                      Choose based on your application's networking requirements and client compatibility needs.
+                    type: string
+                  preferredMaintenanceWindow:
+                    description: |-
+                      ddd,hh24:mm-hh24:mm where:
+                      Specifies a time window during which load balancer node forced replacement should preferably occur. An empty string is a valid value. The format is `ddd-ddd,hh24:mm-hh24:mm` where:
+
+
+                      * `ddd-ddd` represents a day range (e.g., `mon-fri` for Monday to Friday)
+                      * `hh24:mm-hh24:mm` represents a time range in 24-hour format in UTC (e.g., `01:00-03:00` for 1 AM to 3 AM UTC)
+
+
+                      **Important:** All times are in UTC. The day of the week refers to the start time of the window. For time ranges that cross midnight, the window will finish on the next day.
+
+
+                      Examples:
+                      * `mon-wed,02:00-04:00` - Monday through Wednesday, between 2 AM and 4 AM UTC
+                      * `mon-fri,23:00-02:00` - Monday through Friday, starting at 11 PM UTC each day and ending at 2 AM UTC the following day. The last window starts at 11 PM UTC Friday and ends at 2 AM UTC Saturday
+
+
+                      When updates to the load balancer nodes are available, newly started instances always use the newest version, and older versions are progressively phased out as scale-in events occur. Additionally, any remaining instances running out-of-date versions will be automatically replaced during the specified maintenance window.
+
+
+                      Valid values for days are:
+
+
+                      * `mon` - Monday
+                      * `tue` - Tuesday
+                      * `wed` - Wednesday
+                      * `thu` - Thursday
+                      * `fri` - Friday
+                      * `sat` - Saturday
+                      * `sun` - Sunday
+
+
+                      **Note:** Urgent updates may be applied outside of the preferred maintenance window and without notice. `connection_draining_timeout` is always respected.
+
+
+                      If unspecified, non-urgent forced replacements will occur at night in the region.
+                    type: string
+                  preserveHostHeader:
+                    description: |-
+                      (Boolean) If true, the load balancer preserves the original Host header value in requests forwarded to targets. This is useful when your backend application needs to know the original hostname requested by the client, for example with virtual hosting or when generating absolute URLs.
+                      If true, the load balancer preserves the original Host header value in requests forwarded to targets. This is useful when your backend application needs to know the original hostname requested by the client, for example with virtual hosting or when generating absolute URLs.
+                    type: boolean
+                  securityGroups:
+                    description: |-
+                      (Set of String) List of security group IDs to assign to the load balancer. The security groups must allow inbound traffic on the listener ports and health check ports. They should also allow outbound traffic to your target instances or IP addresses, and the HLB control plane.
+                      List of security group IDs to assign to the load balancer. The security groups must allow inbound traffic on the listener ports and health check ports. They should also allow outbound traffic to your target instances or IP addresses, and the HLB control plane.
+                    items:
+                      type: string
+                    type: array
+                    x-kubernetes-list-type: set
+                  subnets:
+                    description: |-
+                      facing load balancers, these must be public subnets.
+                      List of subnet IDs to attach to the load balancer. The subnets must be in at least two different Availability Zones for high availability. For internal load balancers, these must be private subnets. For internet-facing load balancers, these must be public subnets.
+                    items:
+                      type: string
+                    type: array
+                    x-kubernetes-list-type: set
+                  tags:
+                    additionalProperties:
+                      type: string
+                    description: |-
+                      value pairs that help you organize and categorize your resources. Common uses include:
+                      A map of tags to assign to the load balancer and related resources. Tags are key-value pairs that help you organize and categorize your resources. Common uses include:
+
+
+                      * Environment identification (e.g., `environment = "production"`)
+                      * Cost allocation (e.g., `project = "mobile-app"`)
+                      * Security/compliance labeling
+                      * Automation and operations management
+                      A maximum of 5 tags can be assigned (AWS Marketplace limitation).
+                    type: object
+                    x-kubernetes-map-type: granular
+                  xffHeaderProcessingMode:
+                    description: |-
+                      Forwarded-For header. Valid values:
+                      Controls how the load balancer handles the X-Forwarded-For header. Valid values:
+
+
+                      * `append` (default) - Appends the client IP to any existing X-Forwarded-For header
+                      * `preserve` - Keeps the original X-Forwarded-For header unchanged
+                      * `remove` - Removes any existing X-Forwarded-For header
+
+
+                      This header is important for identifying the original client IP address when requests pass through the load balancer.
+                    type: string
+                  zoneId:
+                    description: |-
+                      (String) The ID of the zone
+                      The ID of the zone
+                    type: string
+                  zoneName:
+                    description: |-
+                      (String) The name of the zone
+                      The name of the zone
+                    type: string
+                type: object
+              initProvider:
+                description: |-
+                  THIS IS A BETA FIELD. It will be honored
+                  unless the Management Policies feature flag is disabled.
+                  InitProvider holds the same fields as ForProvider, with the exception
+                  of Identifier and other resource reference fields. The fields that are
+                  in InitProvider are merged into ForProvider when the resource is created.
+                  The same fields are also added to the terraform ignore_changes hook, to
+                  avoid updating them after creation. This is useful for fields that are
+                  required on creation, but we do not desire to update them after creation,
+                  for example because of an external controller is managing them, like an
+                  autoscaler.
+                properties:
+                  clientKeepAlive:
+                    description: |-
+                      604800 seconds, default 3600). This setting determines how long the load balancer maintains idle keepalive connections with clients. Longer values can improve performance by reducing connection establishment overhead, but consume more resources.
+                      The time in seconds to keep client connections alive (60-604800 seconds, default 3600). This setting determines how long the load balancer maintains idle keepalive connections with clients. Longer values can improve performance by reducing connection establishment overhead, but consume more resources.
+                    type: number
+                  connectionDrainingTimeout:
+                    description: |-
+                      in event occurs, load balancer nodes are taken out of the DNS record immediately but we wait for connection_draining_timeout minutes before terminating the instances. This is most useful with HTTP clients that do not respect DNS TLL.
+                      When a scale-in event occurs, load balancer nodes are taken out of the DNS record immediately but we wait for `connection_draining_timeout` minutes before terminating the instances. This is most useful with HTTP clients that do not respect DNS TLL.
+                    type: number
+                  ec2IamRole:
+                    description: |-
+                      (String) Allows the user to assign a role permitting root access to proxy instances via AWS SSM. It is stronly discouraged to change this value as this compromises security on many levels. Use only to perfom audits. Valid values are:
+                      Allows the user to assign a role permitting root access to proxy instances via AWS SSM. It is *stronly discouraged* to change this value as this compromises security on many levels. Use only to perfom audits. Valid values are:
+                      * `lb-standard` (default)
+                      * `lb-ssm`
+                      The role will only be applied to newly created proxy instances, you must trigger an Autoscaling Group Instance Refresh manually for this change to take effect immediately.
+                    type: string
+                  enableCrossZoneLoadBalancing:
+                    description: |-
+                      (String) Configures how the load balancer distributes traffic between Availability Zones. Valid values:
+                      Configures how the load balancer distributes traffic between Availability Zones. Valid values:
+
+
+                      * `full` - Distributes traffic evenly across all instances in all zones
+                      * `avoid` (default) - Attempts to distribute traffic within a zone first, only sending cross-zone traffic when necessary
+                      * `off` - Keeps traffic within the same zone
+
+
+                      The `avoid` mode helps optimize for both availability and performance while minimizing cross-AZ data transfer costs.
+                    type: string
+                  enableDeletionProtection:
+                    description: |-
+                      (Boolean) If true, deletion of the load balancer will be disabled via the API. This prevents accidental deletion of production load balancers. You must set this to false and apply the change before you can delete the load balancer.
+                      If true, deletion of the load balancer will be disabled via the API. This prevents accidental deletion of production load balancers. You must set this to false and apply the change before you can delete the load balancer.
+                    type: boolean
+                  enableHttp2:
+                    description: |-
+                      (Boolean) Indicates whether HTTP/2 is enabled. HTTP/2 provides improved performance through features like multiplexing, header compression, and server push. Enabled by default. Only disable this if you have specific compatibility requirements with HTTP/1.x.
+                      Indicates whether HTTP/2 is enabled. HTTP/2 provides improved performance through features like multiplexing, header compression, and server push. Enabled by default. Only disable this if you have specific compatibility requirements with HTTP/1.x.
+                    type: boolean
+                  idleTimeout:
+                    description: |-
+                      4000 seconds. Default is 60 seconds. Increase this if your application requires longer-lived idle connections.
+                      The time in seconds that a connection is allowed to be idle (no data transfer) before it is closed by the load balancer. Valid values are 1-4000 seconds. Default is 60 seconds. Increase this if your application requires longer-lived idle connections.
+                    type: number
+                  internal:
+                    description: |-
+                      (Boolean) If true, the load balancer will be internal (private). Internal load balancers route traffic within your VPC and are not accessible from the internet. Use this for internal services or when you want to restrict access to your VPC. This cannot be changed after creation.
+                      If true, the load balancer will be internal (private). Internal load balancers route traffic within your VPC and are not accessible from the internet. Use this for internal services or when you want to restrict access to your VPC. This cannot be changed after creation.
+                    type: boolean
+                  ipAddressType:
+                    description: |-
+                      (String) The type of IP addresses used by the subnets for your load balancer. Valid values:
+                      The type of IP addresses used by the subnets for your load balancer. Valid values:
+
+
+                      * `ipv4` (default) - The load balancer has IPv4 addresses only
+                      * `dualstack` - The load balancer has both IPv4 and IPv6 addresses
+                      * `dualstack-without-public-ipv4` - The load balancer has IPv6 addresses and private IPv4 addresses
+
+
+                      Choose based on your application's networking requirements and client compatibility needs.
+                    type: string
+                  preferredMaintenanceWindow:
+                    description: |-
+                      ddd,hh24:mm-hh24:mm where:
+                      Specifies a time window during which load balancer node forced replacement should preferably occur. An empty string is a valid value. The format is `ddd-ddd,hh24:mm-hh24:mm` where:
+
+
+                      * `ddd-ddd` represents a day range (e.g., `mon-fri` for Monday to Friday)
+                      * `hh24:mm-hh24:mm` represents a time range in 24-hour format in UTC (e.g., `01:00-03:00` for 1 AM to 3 AM UTC)
+
+
+                      **Important:** All times are in UTC. The day of the week refers to the start time of the window. For time ranges that cross midnight, the window will finish on the next day.
+
+
+                      Examples:
+                      * `mon-wed,02:00-04:00` - Monday through Wednesday, between 2 AM and 4 AM UTC
+                      * `mon-fri,23:00-02:00` - Monday through Friday, starting at 11 PM UTC each day and ending at 2 AM UTC the following day. The last window starts at 11 PM UTC Friday and ends at 2 AM UTC Saturday
+
+
+                      When updates to the load balancer nodes are available, newly started instances always use the newest version, and older versions are progressively phased out as scale-in events occur. Additionally, any remaining instances running out-of-date versions will be automatically replaced during the specified maintenance window.
+
+
+                      Valid values for days are:
+
+
+                      * `mon` - Monday
+                      * `tue` - Tuesday
+                      * `wed` - Wednesday
+                      * `thu` - Thursday
+                      * `fri` - Friday
+                      * `sat` - Saturday
+                      * `sun` - Sunday
+
+
+                      **Note:** Urgent updates may be applied outside of the preferred maintenance window and without notice. `connection_draining_timeout` is always respected.
+
+
+                      If unspecified, non-urgent forced replacements will occur at night in the region.
+                    type: string
+                  preserveHostHeader:
+                    description: |-
+                      (Boolean) If true, the load balancer preserves the original Host header value in requests forwarded to targets. This is useful when your backend application needs to know the original hostname requested by the client, for example with virtual hosting or when generating absolute URLs.
+                      If true, the load balancer preserves the original Host header value in requests forwarded to targets. This is useful when your backend application needs to know the original hostname requested by the client, for example with virtual hosting or when generating absolute URLs.
+                    type: boolean
+                  securityGroups:
+                    description: |-
+                      (Set of String) List of security group IDs to assign to the load balancer. The security groups must allow inbound traffic on the listener ports and health check ports. They should also allow outbound traffic to your target instances or IP addresses, and the HLB control plane.
+                      List of security group IDs to assign to the load balancer. The security groups must allow inbound traffic on the listener ports and health check ports. They should also allow outbound traffic to your target instances or IP addresses, and the HLB control plane.
+                    items:
+                      type: string
+                    type: array
+                    x-kubernetes-list-type: set
+                  subnets:
+                    description: |-
+                      facing load balancers, these must be public subnets.
+                      List of subnet IDs to attach to the load balancer. The subnets must be in at least two different Availability Zones for high availability. For internal load balancers, these must be private subnets. For internet-facing load balancers, these must be public subnets.
+                    items:
+                      type: string
+                    type: array
+                    x-kubernetes-list-type: set
+                  tags:
+                    additionalProperties:
+                      type: string
+                    description: |-
+                      value pairs that help you organize and categorize your resources. Common uses include:
+                      A map of tags to assign to the load balancer and related resources. Tags are key-value pairs that help you organize and categorize your resources. Common uses include:
+
+
+                      * Environment identification (e.g., `environment = "production"`)
+                      * Cost allocation (e.g., `project = "mobile-app"`)
+                      * Security/compliance labeling
+                      * Automation and operations management
+                      A maximum of 5 tags can be assigned (AWS Marketplace limitation).
+                    type: object
+                    x-kubernetes-map-type: granular
+                  xffHeaderProcessingMode:
+                    description: |-
+                      Forwarded-For header. Valid values:
+                      Controls how the load balancer handles the X-Forwarded-For header. Valid values:
+
+
+                      * `append` (default) - Appends the client IP to any existing X-Forwarded-For header
+                      * `preserve` - Keeps the original X-Forwarded-For header unchanged
+                      * `remove` - Removes any existing X-Forwarded-For header
+
+
+                      This header is important for identifying the original client IP address when requests pass through the load balancer.
+                    type: string
+                  zoneId:
+                    description: |-
+                      (String) The ID of the zone
+                      The ID of the zone
+                    type: string
+                  zoneName:
+                    description: |-
+                      (String) The name of the zone
+                      The name of the zone
+                    type: string
+                type: object
+              managementPolicies:
+                default:
+                - '*'
+                description: |-
+                  THIS IS A BETA FIELD. It is on by default but can be opted out
+                  through a Crossplane feature flag.
+                  ManagementPolicies specify the array of actions Crossplane is allowed to
+                  take on the managed and external resources.
+                  This field is planned to replace the DeletionPolicy field in a future
+                  release. Currently, both could be set independently and non-default
+                  values would be honored if the feature flag is enabled. If both are
+                  custom, the DeletionPolicy field will be ignored.
+                  See the design doc for more information: https://github.com/crossplane/crossplane/blob/499895a25d1a1a0ba1604944ef98ac7a1a71f197/design/design-doc-observe-only-resources.md?plain=1#L223
+                  and this one: https://github.com/crossplane/crossplane/blob/444267e84783136daa93568b364a5f01228cacbe/design/one-pager-ignore-changes.md
+                items:
+                  description: |-
+                    A ManagementAction represents an action that the Crossplane controllers
+                    can take on an external resource.
+                  enum:
+                  - Observe
+                  - Create
+                  - Update
+                  - Delete
+                  - LateInitialize
+                  - '*'
+                  type: string
+                type: array
+              providerConfigRef:
+                default:
+                  name: default
+                description: |-
+                  ProviderConfigReference specifies how the provider that will be used to
+                  create, observe, update, and delete this managed resource should be
+                  configured.
+                properties:
+                  name:
+                    description: Name of the referenced object.
+                    type: string
+                  policy:
+                    description: Policies for referencing.
+                    properties:
+                      resolution:
+                        default: Required
+                        description: |-
+                          Resolution specifies whether resolution of this reference is required.
+                          The default is 'Required', which means the reconcile will fail if the
+                          reference cannot be resolved. 'Optional' means this reference will be
+                          a no-op if it cannot be resolved.
+                        enum:
+                        - Required
+                        - Optional
+                        type: string
+                      resolve:
+                        description: |-
+                          Resolve specifies when this reference should be resolved. The default
+                          is 'IfNotPresent', which will attempt to resolve the reference only when
+                          the corresponding field is not present. Use 'Always' to resolve the
+                          reference on every reconcile.
+                        enum:
+                        - Always
+                        - IfNotPresent
+                        type: string
+                    type: object
+                required:
+                - name
+                type: object
+              publishConnectionDetailsTo:
+                description: |-
+                  PublishConnectionDetailsTo specifies the connection secret config which
+                  contains a name, metadata and a reference to secret store config to
+                  which any connection details for this managed resource should be written.
+                  Connection details frequently include the endpoint, username,
+                  and password required to connect to the managed resource.
+                properties:
+                  configRef:
+                    default:
+                      name: default
+                    description: |-
+                      SecretStoreConfigRef specifies which secret store config should be used
+                      for this ConnectionSecret.
+                    properties:
+                      name:
+                        description: Name of the referenced object.
+                        type: string
+                      policy:
+                        description: Policies for referencing.
+                        properties:
+                          resolution:
+                            default: Required
+                            description: |-
+                              Resolution specifies whether resolution of this reference is required.
+                              The default is 'Required', which means the reconcile will fail if the
+                              reference cannot be resolved. 'Optional' means this reference will be
+                              a no-op if it cannot be resolved.
+                            enum:
+                            - Required
+                            - Optional
+                            type: string
+                          resolve:
+                            description: |-
+                              Resolve specifies when this reference should be resolved. The default
+                              is 'IfNotPresent', which will attempt to resolve the reference only when
+                              the corresponding field is not present. Use 'Always' to resolve the
+                              reference on every reconcile.
+                            enum:
+                            - Always
+                            - IfNotPresent
+                            type: string
+                        type: object
+                    required:
+                    - name
+                    type: object
+                  metadata:
+                    description: Metadata is the metadata for connection secret.
+                    properties:
+                      annotations:
+                        additionalProperties:
+                          type: string
+                        description: |-
+                          Annotations are the annotations to be added to connection secret.
+                          - For Kubernetes secrets, this will be used as "metadata.annotations".
+                          - It is up to Secret Store implementation for others store types.
+                        type: object
+                      labels:
+                        additionalProperties:
+                          type: string
+                        description: |-
+                          Labels are the labels/tags to be added to connection secret.
+                          - For Kubernetes secrets, this will be used as "metadata.labels".
+                          - It is up to Secret Store implementation for others store types.
+                        type: object
+                      type:
+                        description: |-
+                          Type is the SecretType for the connection secret.
+                          - Only valid for Kubernetes Secret Stores.
+                        type: string
+                    type: object
+                  name:
+                    description: Name is the name of the connection secret.
+                    type: string
+                required:
+                - name
+                type: object
+              writeConnectionSecretToRef:
+                description: |-
+                  WriteConnectionSecretToReference specifies the namespace and name of a
+                  Secret to which any connection details for this managed resource should
+                  be written. Connection details frequently include the endpoint, username,
+                  and password required to connect to the managed resource.
+                  This field is planned to be replaced in a future release in favor of
+                  PublishConnectionDetailsTo. Currently, both could be set independently
+                  and connection details would be published to both without affecting
+                  each other.
+                properties:
+                  name:
+                    description: Name of the secret.
+                    type: string
+                  namespace:
+                    description: Namespace of the secret.
+                    type: string
+                required:
+                - name
+                - namespace
+                type: object
+            required:
+            - forProvider
+            type: object
+            x-kubernetes-validations:
+            - message: spec.forProvider.subnets is a required parameter
+              rule: '!(''*'' in self.managementPolicies || ''Create'' in self.managementPolicies
+                || ''Update'' in self.managementPolicies) || has(self.forProvider.subnets)
+                || (has(self.initProvider) && has(self.initProvider.subnets))'
+            - message: spec.forProvider.zoneId is a required parameter
+              rule: '!(''*'' in self.managementPolicies || ''Create'' in self.managementPolicies
+                || ''Update'' in self.managementPolicies) || has(self.forProvider.zoneId)
+                || (has(self.initProvider) && has(self.initProvider.zoneId))'
+            - message: spec.forProvider.zoneName is a required parameter
+              rule: '!(''*'' in self.managementPolicies || ''Create'' in self.managementPolicies
+                || ''Update'' in self.managementPolicies) || has(self.forProvider.zoneName)
+                || (has(self.initProvider) && has(self.initProvider.zoneName))'
+          status:
+            description: HostedLoadBalancerStatus defines the observed state of HostedLoadBalancer.
+            properties:
+              atProvider:
+                properties:
+                  clientKeepAlive:
+                    description: |-
+                      604800 seconds, default 3600). This setting determines how long the load balancer maintains idle keepalive connections with clients. Longer values can improve performance by reducing connection establishment overhead, but consume more resources.
+                      The time in seconds to keep client connections alive (60-604800 seconds, default 3600). This setting determines how long the load balancer maintains idle keepalive connections with clients. Longer values can improve performance by reducing connection establishment overhead, but consume more resources.
+                    type: number
+                  connectionDrainingTimeout:
+                    description: |-
+                      in event occurs, load balancer nodes are taken out of the DNS record immediately but we wait for connection_draining_timeout minutes before terminating the instances. This is most useful with HTTP clients that do not respect DNS TLL.
+                      When a scale-in event occurs, load balancer nodes are taken out of the DNS record immediately but we wait for `connection_draining_timeout` minutes before terminating the instances. This is most useful with HTTP clients that do not respect DNS TLL.
+                    type: number
+                  dnsName:
+                    description: |-
+                      (String) The DNS name of the load balancer
+                      The DNS name of the load balancer
+                    type: string
+                  ec2IamRole:
+                    description: |-
+                      (String) Allows the user to assign a role permitting root access to proxy instances via AWS SSM. It is stronly discouraged to change this value as this compromises security on many levels. Use only to perfom audits. Valid values are:
+                      Allows the user to assign a role permitting root access to proxy instances via AWS SSM. It is *stronly discouraged* to change this value as this compromises security on many levels. Use only to perfom audits. Valid values are:
+                      * `lb-standard` (default)
+                      * `lb-ssm`
+                      The role will only be applied to newly created proxy instances, you must trigger an Autoscaling Group Instance Refresh manually for this change to take effect immediately.
+                    type: string
+                  enableCrossZoneLoadBalancing:
+                    description: |-
+                      (String) Configures how the load balancer distributes traffic between Availability Zones. Valid values:
+                      Configures how the load balancer distributes traffic between Availability Zones. Valid values:
+
+
+                      * `full` - Distributes traffic evenly across all instances in all zones
+                      * `avoid` (default) - Attempts to distribute traffic within a zone first, only sending cross-zone traffic when necessary
+                      * `off` - Keeps traffic within the same zone
+
+
+                      The `avoid` mode helps optimize for both availability and performance while minimizing cross-AZ data transfer costs.
+                    type: string
+                  enableDeletionProtection:
+                    description: |-
+                      (Boolean) If true, deletion of the load balancer will be disabled via the API. This prevents accidental deletion of production load balancers. You must set this to false and apply the change before you can delete the load balancer.
+                      If true, deletion of the load balancer will be disabled via the API. This prevents accidental deletion of production load balancers. You must set this to false and apply the change before you can delete the load balancer.
+                    type: boolean
+                  enableHttp2:
+                    description: |-
+                      (Boolean) Indicates whether HTTP/2 is enabled. HTTP/2 provides improved performance through features like multiplexing, header compression, and server push. Enabled by default. Only disable this if you have specific compatibility requirements with HTTP/1.x.
+                      Indicates whether HTTP/2 is enabled. HTTP/2 provides improved performance through features like multiplexing, header compression, and server push. Enabled by default. Only disable this if you have specific compatibility requirements with HTTP/1.x.
+                    type: boolean
+                  id:
+                    description: (String) The ID of this resource.
+                    type: string
+                  idleTimeout:
+                    description: |-
+                      4000 seconds. Default is 60 seconds. Increase this if your application requires longer-lived idle connections.
+                      The time in seconds that a connection is allowed to be idle (no data transfer) before it is closed by the load balancer. Valid values are 1-4000 seconds. Default is 60 seconds. Increase this if your application requires longer-lived idle connections.
+                    type: number
+                  internal:
+                    description: |-
+                      (Boolean) If true, the load balancer will be internal (private). Internal load balancers route traffic within your VPC and are not accessible from the internet. Use this for internal services or when you want to restrict access to your VPC. This cannot be changed after creation.
+                      If true, the load balancer will be internal (private). Internal load balancers route traffic within your VPC and are not accessible from the internet. Use this for internal services or when you want to restrict access to your VPC. This cannot be changed after creation.
+                    type: boolean
+                  ipAddressType:
+                    description: |-
+                      (String) The type of IP addresses used by the subnets for your load balancer. Valid values:
+                      The type of IP addresses used by the subnets for your load balancer. Valid values:
+
+
+                      * `ipv4` (default) - The load balancer has IPv4 addresses only
+                      * `dualstack` - The load balancer has both IPv4 and IPv6 addresses
+                      * `dualstack-without-public-ipv4` - The load balancer has IPv6 addresses and private IPv4 addresses
+
+
+                      Choose based on your application's networking requirements and client compatibility needs.
+                    type: string
+                  preferredMaintenanceWindow:
+                    description: |-
+                      ddd,hh24:mm-hh24:mm where:
+                      Specifies a time window during which load balancer node forced replacement should preferably occur. An empty string is a valid value. The format is `ddd-ddd,hh24:mm-hh24:mm` where:
+
+
+                      * `ddd-ddd` represents a day range (e.g., `mon-fri` for Monday to Friday)
+                      * `hh24:mm-hh24:mm` represents a time range in 24-hour format in UTC (e.g., `01:00-03:00` for 1 AM to 3 AM UTC)
+
+
+                      **Important:** All times are in UTC. The day of the week refers to the start time of the window. For time ranges that cross midnight, the window will finish on the next day.
+
+
+                      Examples:
+                      * `mon-wed,02:00-04:00` - Monday through Wednesday, between 2 AM and 4 AM UTC
+                      * `mon-fri,23:00-02:00` - Monday through Friday, starting at 11 PM UTC each day and ending at 2 AM UTC the following day. The last window starts at 11 PM UTC Friday and ends at 2 AM UTC Saturday
+
+
+                      When updates to the load balancer nodes are available, newly started instances always use the newest version, and older versions are progressively phased out as scale-in events occur. Additionally, any remaining instances running out-of-date versions will be automatically replaced during the specified maintenance window.
+
+
+                      Valid values for days are:
+
+
+                      * `mon` - Monday
+                      * `tue` - Tuesday
+                      * `wed` - Wednesday
+                      * `thu` - Thursday
+                      * `fri` - Friday
+                      * `sat` - Saturday
+                      * `sun` - Sunday
+
+
+                      **Note:** Urgent updates may be applied outside of the preferred maintenance window and without notice. `connection_draining_timeout` is always respected.
+
+
+                      If unspecified, non-urgent forced replacements will occur at night in the region.
+                    type: string
+                  preserveHostHeader:
+                    description: |-
+                      (Boolean) If true, the load balancer preserves the original Host header value in requests forwarded to targets. This is useful when your backend application needs to know the original hostname requested by the client, for example with virtual hosting or when generating absolute URLs.
+                      If true, the load balancer preserves the original Host header value in requests forwarded to targets. This is useful when your backend application needs to know the original hostname requested by the client, for example with virtual hosting or when generating absolute URLs.
+                    type: boolean
+                  securityGroups:
+                    description: |-
+                      (Set of String) List of security group IDs to assign to the load balancer. The security groups must allow inbound traffic on the listener ports and health check ports. They should also allow outbound traffic to your target instances or IP addresses, and the HLB control plane.
+                      List of security group IDs to assign to the load balancer. The security groups must allow inbound traffic on the listener ports and health check ports. They should also allow outbound traffic to your target instances or IP addresses, and the HLB control plane.
+                    items:
+                      type: string
+                    type: array
+                    x-kubernetes-list-type: set
+                  state:
+                    description: |-
+                      (String) The state of the load balancer
+                      The state of the load balancer
+                    type: string
+                  subnets:
+                    description: |-
+                      facing load balancers, these must be public subnets.
+                      List of subnet IDs to attach to the load balancer. The subnets must be in at least two different Availability Zones for high availability. For internal load balancers, these must be private subnets. For internet-facing load balancers, these must be public subnets.
+                    items:
+                      type: string
+                    type: array
+                    x-kubernetes-list-type: set
+                  tags:
+                    additionalProperties:
+                      type: string
+                    description: |-
+                      value pairs that help you organize and categorize your resources. Common uses include:
+                      A map of tags to assign to the load balancer and related resources. Tags are key-value pairs that help you organize and categorize your resources. Common uses include:
+
+
+                      * Environment identification (e.g., `environment = "production"`)
+                      * Cost allocation (e.g., `project = "mobile-app"`)
+                      * Security/compliance labeling
+                      * Automation and operations management
+                      A maximum of 5 tags can be assigned (AWS Marketplace limitation).
+                    type: object
+                    x-kubernetes-map-type: granular
+                  xffHeaderProcessingMode:
+                    description: |-
+                      Forwarded-For header. Valid values:
+                      Controls how the load balancer handles the X-Forwarded-For header. Valid values:
+
+
+                      * `append` (default) - Appends the client IP to any existing X-Forwarded-For header
+                      * `preserve` - Keeps the original X-Forwarded-For header unchanged
+                      * `remove` - Removes any existing X-Forwarded-For header
+
+
+                      This header is important for identifying the original client IP address when requests pass through the load balancer.
+                    type: string
+                  zoneId:
+                    description: |-
+                      (String) The ID of the zone
+                      The ID of the zone
+                    type: string
+                  zoneName:
+                    description: |-
+                      (String) The name of the zone
+                      The name of the zone
+                    type: string
+                type: object
+              conditions:
+                description: Conditions of the resource.
+                items:
+                  description: A Condition that may apply to a resource.
+                  properties:
+                    lastTransitionTime:
+                      description: |-
+                        LastTransitionTime is the last time this condition transitioned from one
+                        status to another.
+                      format: date-time
+                      type: string
+                    message:
+                      description: |-
+                        A Message containing details about this condition's last transition from
+                        one status to another, if any.
+                      type: string
+                    observedGeneration:
+                      description: |-
+                        ObservedGeneration represents the .metadata.generation that the condition was set based upon.
+                        For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                        with respect to the current state of the instance.
+                      format: int64
+                      type: integer
+                    reason:
+                      description: A Reason for this condition's last transition from
+                        one status to another.
+                      type: string
+                    status:
+                      description: Status of this condition; is it currently True,
+                        False, or Unknown?
+                      type: string
+                    type:
+                      description: |-
+                        Type of this condition. At most one of each condition type may apply to
+                        a resource at any point in time.
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - type
+                x-kubernetes-list-type: map
+              observedGeneration:
+                description: |-
+                  ObservedGeneration is the latest metadata.generation
+                  which resulted in either a ready state, or stalled due to error
+                  it can not recover from without human intervention.
+                format: int64
+                type: integer
+            type: object
+        required:
+        - spec
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
