@@ -18,6 +18,7 @@ spec:
       instance_type: c7g.large
       min_instance_count: 2
       target_cpu_usage: 40
+    name: example-hlb
     subnets:
     - subnet-12345678
     - subnet-87654321

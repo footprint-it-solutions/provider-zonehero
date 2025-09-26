@@ -351,6 +351,16 @@ func (in *HostedLoadBalancerInitParameters) DeepCopyInto(out *HostedLoadBalancer
 		*out = new(bool)
 		**out = **in
 	}
+	if in.Name != nil {
+		in, out := &in.Name, &out.Name
+		*out = new(string)
+		**out = **in
+	}
+	if in.NamePrefix != nil {
+		in, out := &in.NamePrefix, &out.NamePrefix
+		*out = new(string)
+		**out = **in
+	}
 	if in.PreferredMaintenanceWindow != nil {
 		in, out := &in.PreferredMaintenanceWindow, &out.PreferredMaintenanceWindow
 		*out = new(string)
@@ -516,6 +526,16 @@ func (in *HostedLoadBalancerObservation) DeepCopyInto(out *HostedLoadBalancerObs
 		*out = new(bool)
 		**out = **in
 	}
+	if in.Name != nil {
+		in, out := &in.Name, &out.Name
+		*out = new(string)
+		**out = **in
+	}
+	if in.NamePrefix != nil {
+		in, out := &in.NamePrefix, &out.NamePrefix
+		*out = new(string)
+		**out = **in
+	}
 	if in.PreferredMaintenanceWindow != nil {
 		in, out := &in.PreferredMaintenanceWindow, &out.PreferredMaintenanceWindow
 		*out = new(string)
@@ -642,6 +662,16 @@ func (in *HostedLoadBalancerParameters) DeepCopyInto(out *HostedLoadBalancerPara
 	if in.Internal != nil {
 		in, out := &in.Internal, &out.Internal
 		*out = new(bool)
+		**out = **in
+	}
+	if in.Name != nil {
+		in, out := &in.Name, &out.Name
+		*out = new(string)
+		**out = **in
+	}
+	if in.NamePrefix != nil {
+		in, out := &in.NamePrefix, &out.NamePrefix
+		*out = new(string)
 		**out = **in
 	}
 	if in.PreferredMaintenanceWindow != nil {

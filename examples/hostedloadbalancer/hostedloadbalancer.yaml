@@ -6,13 +6,18 @@ metadata:
   labels:
     testing.upbound.io/example-name: example
   name: footprint-test-hlb
+  namespace: crossplane-system
 spec:
   forProvider:
+    name: footprint-test-hlb
     enableHttp2: true
     internal: false
     subnets:
     - subnet-07742d814a98f58da
+    securityGroups:
+    - sg-0a03d2b266747b67f
     zoneId: "Z0100484379B8YR2UX43J"
     zoneName: "k3s-devel.footprintit.net"
+    enableDeletionProtection: false
   providerConfigRef:
     name: zonehero-provider

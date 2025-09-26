@@ -66,6 +66,14 @@ type HostedLoadBalancerInitParameters struct {
 	// If true, the load balancer will be internal (private). Internal load balancers route traffic within your VPC and are not accessible from the internet. Use this for internal services or when you want to restrict access to your VPC. This cannot be changed after creation.
 	Internal *bool `json:"internal,omitempty" tf:"internal,omitempty"`
 
+	// (String) The name of the load balancer. Must be unique within your account, max 32 characters, alphanumeric and hyphens only. This name will be used in DNS records and AWS resource names, so choose something meaningful and compliant with DNS naming conventions.
+	// The name of the load balancer. Must be unique within your account, max 32 characters, alphanumeric and hyphens only. This name will be used in DNS records and AWS resource names, so choose something meaningful and compliant with DNS naming conventions.
+	Name *string `json:"name,omitempty" tf:"name,omitempty"`
+
+	// 6 characters long. Conflicts with the name attribute - you can only use one or the other.
+	// Creates a unique name beginning with the specified prefix. The prefix must be 1-6 characters long. Conflicts with the `name` attribute - you can only use one or the other.
+	NamePrefix *string `json:"namePrefix,omitempty" tf:"name_prefix,omitempty"`
+
 	// ddd,hh24:mm-hh24:mm where:
 	// Specifies a time window during which load balancer node forced replacement should preferably occur. An empty string is a valid value. The format is `ddd-ddd,hh24:mm-hh24:mm` where:
 	//
@@ -198,6 +206,14 @@ type HostedLoadBalancerObservation struct {
 	// (Boolean) If true, the load balancer will be internal (private). Internal load balancers route traffic within your VPC and are not accessible from the internet. Use this for internal services or when you want to restrict access to your VPC. This cannot be changed after creation.
 	// If true, the load balancer will be internal (private). Internal load balancers route traffic within your VPC and are not accessible from the internet. Use this for internal services or when you want to restrict access to your VPC. This cannot be changed after creation.
 	Internal *bool `json:"internal,omitempty" tf:"internal,omitempty"`
+
+	// (String) The name of the load balancer. Must be unique within your account, max 32 characters, alphanumeric and hyphens only. This name will be used in DNS records and AWS resource names, so choose something meaningful and compliant with DNS naming conventions.
+	// The name of the load balancer. Must be unique within your account, max 32 characters, alphanumeric and hyphens only. This name will be used in DNS records and AWS resource names, so choose something meaningful and compliant with DNS naming conventions.
+	Name *string `json:"name,omitempty" tf:"name,omitempty"`
+
+	// 6 characters long. Conflicts with the name attribute - you can only use one or the other.
+	// Creates a unique name beginning with the specified prefix. The prefix must be 1-6 characters long. Conflicts with the `name` attribute - you can only use one or the other.
+	NamePrefix *string `json:"namePrefix,omitempty" tf:"name_prefix,omitempty"`
 
 	// ddd,hh24:mm-hh24:mm where:
 	// Specifies a time window during which load balancer node forced replacement should preferably occur. An empty string is a valid value. The format is `ddd-ddd,hh24:mm-hh24:mm` where:
@@ -338,6 +354,16 @@ type HostedLoadBalancerParameters struct {
 	// +kubebuilder:validation:Optional
 	Internal *bool `json:"internal,omitempty" tf:"internal,omitempty"`
 
+	// (String) The name of the load balancer. Must be unique within your account, max 32 characters, alphanumeric and hyphens only. This name will be used in DNS records and AWS resource names, so choose something meaningful and compliant with DNS naming conventions.
+	// The name of the load balancer. Must be unique within your account, max 32 characters, alphanumeric and hyphens only. This name will be used in DNS records and AWS resource names, so choose something meaningful and compliant with DNS naming conventions.
+	// +kubebuilder:validation:Optional
+	Name *string `json:"name,omitempty" tf:"name,omitempty"`
+
+	// 6 characters long. Conflicts with the name attribute - you can only use one or the other.
+	// Creates a unique name beginning with the specified prefix. The prefix must be 1-6 characters long. Conflicts with the `name` attribute - you can only use one or the other.
+	// +kubebuilder:validation:Optional
+	NamePrefix *string `json:"namePrefix,omitempty" tf:"name_prefix,omitempty"`
+
 	// ddd,hh24:mm-hh24:mm where:
 	// Specifies a time window during which load balancer node forced replacement should preferably occur. An empty string is a valid value. The format is `ddd-ddd,hh24:mm-hh24:mm` where:
 	//
@@ -455,6 +481,7 @@ type HostedLoadBalancerStatus struct {
 type HostedLoadBalancer struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
+	// +kubebuilder:validation:XValidation:rule="!('*' in self.managementPolicies || 'Create' in self.managementPolicies || 'Update' in self.managementPolicies) || has(self.forProvider.name) || (has(self.initProvider) && has(self.initProvider.name))",message="spec.forProvider.name is a required parameter"
 	// +kubebuilder:validation:XValidation:rule="!('*' in self.managementPolicies || 'Create' in self.managementPolicies || 'Update' in self.managementPolicies) || has(self.forProvider.subnets) || (has(self.initProvider) && has(self.initProvider.subnets))",message="spec.forProvider.subnets is a required parameter"
 	// +kubebuilder:validation:XValidation:rule="!('*' in self.managementPolicies || 'Create' in self.managementPolicies || 'Update' in self.managementPolicies) || has(self.forProvider.zoneId) || (has(self.initProvider) && has(self.initProvider.zoneId))",message="spec.forProvider.zoneId is a required parameter"
 	// +kubebuilder:validation:XValidation:rule="!('*' in self.managementPolicies || 'Create' in self.managementPolicies || 'Update' in self.managementPolicies) || has(self.forProvider.zoneName) || (has(self.initProvider) && has(self.initProvider.zoneName))",message="spec.forProvider.zoneName is a required parameter"

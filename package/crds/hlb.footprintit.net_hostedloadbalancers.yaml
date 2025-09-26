@@ -143,6 +143,16 @@ spec:
 
                       Choose based on your application's networking requirements and client compatibility needs.
                     type: string
+                  name:
+                    description: |-
+                      (String) The name of the load balancer. Must be unique within your account, max 32 characters, alphanumeric and hyphens only. This name will be used in DNS records and AWS resource names, so choose something meaningful and compliant with DNS naming conventions.
+                      The name of the load balancer. Must be unique within your account, max 32 characters, alphanumeric and hyphens only. This name will be used in DNS records and AWS resource names, so choose something meaningful and compliant with DNS naming conventions.
+                    type: string
+                  namePrefix:
+                    description: |-
+                      6 characters long. Conflicts with the name attribute - you can only use one or the other.
+                      Creates a unique name beginning with the specified prefix. The prefix must be 1-6 characters long. Conflicts with the `name` attribute - you can only use one or the other.
+                    type: string
                   preferredMaintenanceWindow:
                     description: |-
                       ddd,hh24:mm-hh24:mm where:
@@ -317,6 +327,16 @@ spec:
 
 
                       Choose based on your application's networking requirements and client compatibility needs.
+                    type: string
+                  name:
+                    description: |-
+                      (String) The name of the load balancer. Must be unique within your account, max 32 characters, alphanumeric and hyphens only. This name will be used in DNS records and AWS resource names, so choose something meaningful and compliant with DNS naming conventions.
+                      The name of the load balancer. Must be unique within your account, max 32 characters, alphanumeric and hyphens only. This name will be used in DNS records and AWS resource names, so choose something meaningful and compliant with DNS naming conventions.
+                    type: string
+                  namePrefix:
+                    description: |-
+                      6 characters long. Conflicts with the name attribute - you can only use one or the other.
+                      Creates a unique name beginning with the specified prefix. The prefix must be 1-6 characters long. Conflicts with the `name` attribute - you can only use one or the other.
                     type: string
                   preferredMaintenanceWindow:
                     description: |-
@@ -584,6 +604,10 @@ spec:
             - forProvider
             type: object
             x-kubernetes-validations:
+            - message: spec.forProvider.name is a required parameter
+              rule: '!(''*'' in self.managementPolicies || ''Create'' in self.managementPolicies
+                || ''Update'' in self.managementPolicies) || has(self.forProvider.name)
+                || (has(self.initProvider) && has(self.initProvider.name))'
             - message: spec.forProvider.subnets is a required parameter
               rule: '!(''*'' in self.managementPolicies || ''Create'' in self.managementPolicies
                 || ''Update'' in self.managementPolicies) || has(self.forProvider.subnets)
@@ -672,6 +696,16 @@ spec:
 
 
                       Choose based on your application's networking requirements and client compatibility needs.
+                    type: string
+                  name:
+                    description: |-
+                      (String) The name of the load balancer. Must be unique within your account, max 32 characters, alphanumeric and hyphens only. This name will be used in DNS records and AWS resource names, so choose something meaningful and compliant with DNS naming conventions.
+                      The name of the load balancer. Must be unique within your account, max 32 characters, alphanumeric and hyphens only. This name will be used in DNS records and AWS resource names, so choose something meaningful and compliant with DNS naming conventions.
+                    type: string
+                  namePrefix:
+                    description: |-
+                      6 characters long. Conflicts with the name attribute - you can only use one or the other.
+                      Creates a unique name beginning with the specified prefix. The prefix must be 1-6 characters long. Conflicts with the `name` attribute - you can only use one or the other.
                     type: string
                   preferredMaintenanceWindow:
                     description: |-
