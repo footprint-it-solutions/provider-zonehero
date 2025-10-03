@@ -10,7 +10,7 @@ package apis
 import (
 	"k8s.io/apimachinery/pkg/runtime"
 
-	v1alpha1 "github.com/footprint-it-solutions/provider-zonehero/apis/null/v1alpha1"
+	v1alpha1 "github.com/footprint-it-solutions/provider-zonehero/apis/hlb/v1alpha1"
 	v1alpha1apis "github.com/footprint-it-solutions/provider-zonehero/apis/v1alpha1"
 	v1beta1 "github.com/footprint-it-solutions/provider-zonehero/apis/v1beta1"
 )

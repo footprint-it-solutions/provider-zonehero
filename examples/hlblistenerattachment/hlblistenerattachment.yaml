@@ -1,0 +1,20 @@
+apiVersion: hlb.footprintit.net/v1alpha1
+kind: HLBListenerAttachment
+metadata:
+  annotations:
+    meta.upbound.io/example-id: hlb/v1alpha1/hlblistenerattachment
+  labels:
+    testing.upbound.io/example-name: example
+  name: footprint-test-hlb-front-end
+spec:
+  forProvider:
+    alpnPolicy: HTTP2Preferred
+    certificateSecretsName: "/hlb/123"
+    hostedloadbalancerRef:
+      name: footprint-test-hlb
+    overprovisioningFactor: 1.1
+    port: 443
+    protocol: HTTPS
+    targetGroupArn: ""
+  providerConfigRef:
+    name: zonehero-provider

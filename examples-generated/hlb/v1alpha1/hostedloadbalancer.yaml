@@ -1,0 +1,26 @@
+apiVersion: hlb.footprintit.net/v1alpha1
+kind: HostedLoadBalancer
+metadata:
+  annotations:
+    meta.upbound.io/example-id: hlb/v1alpha1/hostedloadbalancer
+  labels:
+    testing.upbound.io/example-name: example
+  name: example
+spec:
+  forProvider:
+    access_logs:
+      bucket: my-logs-bucket
+      enabled: true
+      prefix: my-hlb-logs
+    enableHttp2: true
+    internal: false
+    launch_config:
+      instance_type: c7g.large
+      min_instance_count: 2
+      target_cpu_usage: 40
+    name: example-hlb
+    subnets:
+    - subnet-12345678
+    - subnet-87654321
+    tags:
+      Environment: production
