@@ -9,12 +9,12 @@ import (
 	// "github.com/crossplane/crossplane-runtime/pkg/meta"
 	// "github.com/google/go-cmp/cmp"
 	// snsv1alpha1 "provider-aws-controlapi/apis/sns/v1alpha1"
-	awsclient "provider-zonehero/internal//clients"
+	awsclient "github.com/footprint-it-solutions/provider-zonehero/internal/clients"
 	// "provider-aws-controlapi/internal/clients/sns"
 	// "strings"
 	// "time"
 
-	v1alpha1 "provider-zonehero/apis//hlb/v1alpha1"
+	v1alpha1 "github.com/footprint-it-solutions/provider-zonehero/apis/hlb/v1alpha1"
 	apisv1alpha1 "github.com/crossplane/provider-template/apis/v1alpha1"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -196,7 +196,7 @@ type external_client struct {
 
 
 func (c *external_client) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	resp, err := c.sendRequest(ctx, "GET", fmt.Sprintf("/aws_account/%s/load-balancers/%s", c.accountID, loadBalancerID), nil)
+	resp, err := c.aws_sdk.sendRequest(ctx, "GET", fmt.Sprintf("/aws_account/%s/load-balancers/%s", c.accountID, loadBalancerID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -251,7 +251,7 @@ func (c *external_client) waitForLoadBalancerState(ctx context.Context, id strin
 	var lb *LoadBalancer
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		var err error
-		lb, err = c.GetLoadBalancer(ctx, id)
+		lb, err = GetLoadBalancer(ctx, id)
 		if err != nil {
 			return retry.NonRetryableError(fmt.Errorf("error getting load balancer (%s): %w", id, err))
 		}
@@ -284,7 +284,7 @@ func (c *external_client) waitForLoadBalancerState(ctx context.Context, id strin
 
 
 func (c *external_client) GetLoadBalancer(ctx context.Context, loadBalancerID string) (*LoadBalancer, error) {
-	resp, err := c.sendRequest(ctx, "GET", fmt.Sprintf("/aws_account/%s/load-balancers/%s", c.accountID, loadBalancerID), nil)
+	resp, err := c.aws_sdk.sendRequest(ctx, "GET", fmt.Sprintf("/aws_account/%s/load-balancers/%s", c.accountID, loadBalancerID), nil)
 	if err != nil {
 		return nil, err
 	}

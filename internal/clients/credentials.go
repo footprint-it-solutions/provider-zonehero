@@ -1,4 +1,4 @@
-package hostedloadbalancer
+package clients
 
 
 import (

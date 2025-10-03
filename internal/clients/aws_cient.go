@@ -1,4 +1,4 @@
-package hostedloadbalancer
+package clients
 
 
 import (
@@ -72,7 +72,7 @@ func NewClient(ctx context.Context, apiKey string, awsConfig aws.Config, partiti
 }
 
 
-func (c *Client) sendRequest(ctx context.Context, method, path string, body interface{}) (*http.Response, error) {
+func (c *AWSClient) sendRequest(ctx context.Context, method, path string, body interface{}) (*http.Response, error) {
 	url := fmt.Sprintf("%s%s", c.baseURL, path)
 
 	if c.debug {

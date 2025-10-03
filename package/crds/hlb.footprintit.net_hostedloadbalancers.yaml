@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.16.5
   name: hostedloadbalancers.hlb.footprintit.net
 spec:
   group: hlb.footprintit.net
@@ -102,11 +102,9 @@ spec:
                       (String) Configures how the load balancer distributes traffic between Availability Zones. Valid values:
                       Configures how the load balancer distributes traffic between Availability Zones. Valid values:
 
-
                       * `full` - Distributes traffic evenly across all instances in all zones
                       * `avoid` (default) - Attempts to distribute traffic within a zone first, only sending cross-zone traffic when necessary
                       * `off` - Keeps traffic within the same zone
-
 
                       The `avoid` mode helps optimize for both availability and performance while minimizing cross-AZ data transfer costs.
                     type: string
@@ -135,11 +133,9 @@ spec:
                       (String) The type of IP addresses used by the subnets for your load balancer. Valid values:
                       The type of IP addresses used by the subnets for your load balancer. Valid values:
 
-
                       * `ipv4` (default) - The load balancer has IPv4 addresses only
                       * `dualstack` - The load balancer has both IPv4 and IPv6 addresses
                       * `dualstack-without-public-ipv4` - The load balancer has IPv6 addresses and private IPv4 addresses
-
 
                       Choose based on your application's networking requirements and client compatibility needs.
                     type: string
@@ -158,24 +154,18 @@ spec:
                       ddd,hh24:mm-hh24:mm where:
                       Specifies a time window during which load balancer node forced replacement should preferably occur. An empty string is a valid value. The format is `ddd-ddd,hh24:mm-hh24:mm` where:
 
-
                       * `ddd-ddd` represents a day range (e.g., `mon-fri` for Monday to Friday)
                       * `hh24:mm-hh24:mm` represents a time range in 24-hour format in UTC (e.g., `01:00-03:00` for 1 AM to 3 AM UTC)
 
-
                       **Important:** All times are in UTC. The day of the week refers to the start time of the window. For time ranges that cross midnight, the window will finish on the next day.
-
 
                       Examples:
                       * `mon-wed,02:00-04:00` - Monday through Wednesday, between 2 AM and 4 AM UTC
                       * `mon-fri,23:00-02:00` - Monday through Friday, starting at 11 PM UTC each day and ending at 2 AM UTC the following day. The last window starts at 11 PM UTC Friday and ends at 2 AM UTC Saturday
 
-
                       When updates to the load balancer nodes are available, newly started instances always use the newest version, and older versions are progressively phased out as scale-in events occur. Additionally, any remaining instances running out-of-date versions will be automatically replaced during the specified maintenance window.
 
-
                       Valid values for days are:
-
 
                       * `mon` - Monday
                       * `tue` - Tuesday
@@ -185,9 +175,7 @@ spec:
                       * `sat` - Saturday
                       * `sun` - Sunday
 
-
                       **Note:** Urgent updates may be applied outside of the preferred maintenance window and without notice. `connection_draining_timeout` is always respected.
-
 
                       If unspecified, non-urgent forced replacements will occur at night in the region.
                     type: string
@@ -219,7 +207,6 @@ spec:
                       value pairs that help you organize and categorize your resources. Common uses include:
                       A map of tags to assign to the load balancer and related resources. Tags are key-value pairs that help you organize and categorize your resources. Common uses include:
 
-
                       * Environment identification (e.g., `environment = "production"`)
                       * Cost allocation (e.g., `project = "mobile-app"`)
                       * Security/compliance labeling
@@ -232,11 +219,9 @@ spec:
                       Forwarded-For header. Valid values:
                       Controls how the load balancer handles the X-Forwarded-For header. Valid values:
 
-
                       * `append` (default) - Appends the client IP to any existing X-Forwarded-For header
                       * `preserve` - Keeps the original X-Forwarded-For header unchanged
                       * `remove` - Removes any existing X-Forwarded-For header
-
 
                       This header is important for identifying the original client IP address when requests pass through the load balancer.
                     type: string
@@ -287,11 +272,9 @@ spec:
                       (String) Configures how the load balancer distributes traffic between Availability Zones. Valid values:
                       Configures how the load balancer distributes traffic between Availability Zones. Valid values:
 
-
                       * `full` - Distributes traffic evenly across all instances in all zones
                       * `avoid` (default) - Attempts to distribute traffic within a zone first, only sending cross-zone traffic when necessary
                       * `off` - Keeps traffic within the same zone
-
 
                       The `avoid` mode helps optimize for both availability and performance while minimizing cross-AZ data transfer costs.
                     type: string
@@ -320,11 +303,9 @@ spec:
                       (String) The type of IP addresses used by the subnets for your load balancer. Valid values:
                       The type of IP addresses used by the subnets for your load balancer. Valid values:
 
-
                       * `ipv4` (default) - The load balancer has IPv4 addresses only
                       * `dualstack` - The load balancer has both IPv4 and IPv6 addresses
                       * `dualstack-without-public-ipv4` - The load balancer has IPv6 addresses and private IPv4 addresses
-
 
                       Choose based on your application's networking requirements and client compatibility needs.
                     type: string
@@ -343,24 +324,18 @@ spec:
                       ddd,hh24:mm-hh24:mm where:
                       Specifies a time window during which load balancer node forced replacement should preferably occur. An empty string is a valid value. The format is `ddd-ddd,hh24:mm-hh24:mm` where:
 
-
                       * `ddd-ddd` represents a day range (e.g., `mon-fri` for Monday to Friday)
                       * `hh24:mm-hh24:mm` represents a time range in 24-hour format in UTC (e.g., `01:00-03:00` for 1 AM to 3 AM UTC)
 
-
                       **Important:** All times are in UTC. The day of the week refers to the start time of the window. For time ranges that cross midnight, the window will finish on the next day.
-
 
                       Examples:
                       * `mon-wed,02:00-04:00` - Monday through Wednesday, between 2 AM and 4 AM UTC
                       * `mon-fri,23:00-02:00` - Monday through Friday, starting at 11 PM UTC each day and ending at 2 AM UTC the following day. The last window starts at 11 PM UTC Friday and ends at 2 AM UTC Saturday
 
-
                       When updates to the load balancer nodes are available, newly started instances always use the newest version, and older versions are progressively phased out as scale-in events occur. Additionally, any remaining instances running out-of-date versions will be automatically replaced during the specified maintenance window.
 
-
                       Valid values for days are:
-
 
                       * `mon` - Monday
                       * `tue` - Tuesday
@@ -370,9 +345,7 @@ spec:
                       * `sat` - Saturday
                       * `sun` - Sunday
 
-
                       **Note:** Urgent updates may be applied outside of the preferred maintenance window and without notice. `connection_draining_timeout` is always respected.
-
 
                       If unspecified, non-urgent forced replacements will occur at night in the region.
                     type: string
@@ -404,7 +377,6 @@ spec:
                       value pairs that help you organize and categorize your resources. Common uses include:
                       A map of tags to assign to the load balancer and related resources. Tags are key-value pairs that help you organize and categorize your resources. Common uses include:
 
-
                       * Environment identification (e.g., `environment = "production"`)
                       * Cost allocation (e.g., `project = "mobile-app"`)
                       * Security/compliance labeling
@@ -417,11 +389,9 @@ spec:
                       Forwarded-For header. Valid values:
                       Controls how the load balancer handles the X-Forwarded-For header. Valid values:
 
-
                       * `append` (default) - Appends the client IP to any existing X-Forwarded-For header
                       * `preserve` - Keeps the original X-Forwarded-For header unchanged
                       * `remove` - Removes any existing X-Forwarded-For header
-
 
                       This header is important for identifying the original client IP address when requests pass through the load balancer.
                     type: string
@@ -653,11 +623,9 @@ spec:
                       (String) Configures how the load balancer distributes traffic between Availability Zones. Valid values:
                       Configures how the load balancer distributes traffic between Availability Zones. Valid values:
 
-
                       * `full` - Distributes traffic evenly across all instances in all zones
                       * `avoid` (default) - Attempts to distribute traffic within a zone first, only sending cross-zone traffic when necessary
                       * `off` - Keeps traffic within the same zone
-
 
                       The `avoid` mode helps optimize for both availability and performance while minimizing cross-AZ data transfer costs.
                     type: string
@@ -689,11 +657,9 @@ spec:
                       (String) The type of IP addresses used by the subnets for your load balancer. Valid values:
                       The type of IP addresses used by the subnets for your load balancer. Valid values:
 
-
                       * `ipv4` (default) - The load balancer has IPv4 addresses only
                       * `dualstack` - The load balancer has both IPv4 and IPv6 addresses
                       * `dualstack-without-public-ipv4` - The load balancer has IPv6 addresses and private IPv4 addresses
-
 
                       Choose based on your application's networking requirements and client compatibility needs.
                     type: string
@@ -712,24 +678,18 @@ spec:
                       ddd,hh24:mm-hh24:mm where:
                       Specifies a time window during which load balancer node forced replacement should preferably occur. An empty string is a valid value. The format is `ddd-ddd,hh24:mm-hh24:mm` where:
 
-
                       * `ddd-ddd` represents a day range (e.g., `mon-fri` for Monday to Friday)
                       * `hh24:mm-hh24:mm` represents a time range in 24-hour format in UTC (e.g., `01:00-03:00` for 1 AM to 3 AM UTC)
 
-
                       **Important:** All times are in UTC. The day of the week refers to the start time of the window. For time ranges that cross midnight, the window will finish on the next day.
-
 
                       Examples:
                       * `mon-wed,02:00-04:00` - Monday through Wednesday, between 2 AM and 4 AM UTC
                       * `mon-fri,23:00-02:00` - Monday through Friday, starting at 11 PM UTC each day and ending at 2 AM UTC the following day. The last window starts at 11 PM UTC Friday and ends at 2 AM UTC Saturday
 
-
                       When updates to the load balancer nodes are available, newly started instances always use the newest version, and older versions are progressively phased out as scale-in events occur. Additionally, any remaining instances running out-of-date versions will be automatically replaced during the specified maintenance window.
 
-
                       Valid values for days are:
-
 
                       * `mon` - Monday
                       * `tue` - Tuesday
@@ -739,9 +699,7 @@ spec:
                       * `sat` - Saturday
                       * `sun` - Sunday
 
-
                       **Note:** Urgent updates may be applied outside of the preferred maintenance window and without notice. `connection_draining_timeout` is always respected.
-
 
                       If unspecified, non-urgent forced replacements will occur at night in the region.
                     type: string
@@ -778,7 +736,6 @@ spec:
                       value pairs that help you organize and categorize your resources. Common uses include:
                       A map of tags to assign to the load balancer and related resources. Tags are key-value pairs that help you organize and categorize your resources. Common uses include:
 
-
                       * Environment identification (e.g., `environment = "production"`)
                       * Cost allocation (e.g., `project = "mobile-app"`)
                       * Security/compliance labeling
@@ -791,11 +748,9 @@ spec:
                       Forwarded-For header. Valid values:
                       Controls how the load balancer handles the X-Forwarded-For header. Valid values:
 
-
                       * `append` (default) - Appends the client IP to any existing X-Forwarded-For header
                       * `preserve` - Keeps the original X-Forwarded-For header unchanged
                       * `remove` - Removes any existing X-Forwarded-For header
-
 
                       This header is important for identifying the original client IP address when requests pass through the load balancer.
                     type: string
