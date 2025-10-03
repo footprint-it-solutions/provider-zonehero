@@ -4,7 +4,7 @@ metadata:
   annotations:
     meta.upbound.io/example-id: hlb/v1alpha1/hostedloadbalancer
   labels:
-    testing.upbound.io/example-name: example
+    testing.upbound.io/example-name: footprint-test-hlb
   name: footprint-test-hlb
   namespace: crossplane-system
 spec:
