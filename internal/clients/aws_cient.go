@@ -2,13 +2,13 @@ package clients
 
 
 import (
-	// "bytes"
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
-	// "net/http"
+	"net/http"
 	// "os"
 	"time"
 
@@ -125,4 +125,18 @@ func (c *AWSClient) sendRequest(ctx context.Context, method, path string, body i
 	}
 
 	return resp, nil
+}
+
+
+func customRetryPolicy(ctx context.Context, resp *http.Response, err error) (bool, error) {
+	if err != nil {
+		return false, err
+	}
+
+	// Retry only if the response status code is 429
+	if resp.StatusCode == http.StatusTooManyRequests {
+		return true, nil
+	}
+
+	return false, nil
 }

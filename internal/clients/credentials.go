@@ -9,10 +9,10 @@ import (
 	"path/filepath"
 	"time"
 
-	// "github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	// "github.com/aws/aws-sdk-go-v2/config"
 	// "github.com/aws/aws-sdk-go-v2/credentials"
-	// "github.com/aws/aws-sdk-go-v2/service/sts"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	// smithyhttp "github.com/aws/smithy-go/transport/http"
 	ini "gopkg.in/ini.v1"
 )
@@ -131,6 +131,42 @@ func generateSTSHeaders(ctx context.Context, cfg aws.Config, accountID string, h
 	headers := parsedURL.Query().Encode()
 
 	return headers, nil
+}
+
+
+func getSTSClient(ctx context.Context, cfg aws.Config, accountID string) (*sts.Client, error) {
+	stsClient := sts.NewFromConfig(cfg)
+
+	// Assume the hlbAdminUserRole
+	roleARN := fmt.Sprintf(hlbAdminUserRole, accountID)
+	assumeRoleInput := &sts.AssumeRoleInput{
+		RoleArn:         aws.String(roleARN),
+		RoleSessionName: aws.String("HLBTerraformProviderSession"),
+	}
+
+	assumeRoleOutput, err := stsClient.AssumeRole(ctx, assumeRoleInput)
+	if err != nil {
+		return nil, fmt.Errorf("failed to assume role: %w", err)
+	}
+
+	assumedCredentialsProvider := credentials.NewStaticCredentialsProvider(
+		*assumeRoleOutput.Credentials.AccessKeyId,
+		*assumeRoleOutput.Credentials.SecretAccessKey,
+		*assumeRoleOutput.Credentials.SessionToken)
+
+	// Create a new config with the assumed role credentials
+	assumedConfig, err := config.LoadDefaultConfig(ctx,
+		config.WithCredentialsProvider(assumedCredentialsProvider),
+		config.WithRegion(cfg.Region),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create assumed role config: %w", err)
+	}
+
+	// Create a new STS client with the assumed role credentials
+	assumedSTSClient := sts.NewFromConfig(assumedConfig)
+
+	return assumedSTSClient, nil
 }
 
 
