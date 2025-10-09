@@ -34,36 +34,62 @@ type DeploymentStatus struct {
 
 // HostedLoadBalancerParameters are the configurable fields of a HostedLoadBalancer.
 type HostedLoadBalancerParameters struct {
-	// AccessLogs                   *AccessLogs       `json:"accessLogs,omitempty"`
-	AccountID                    string            `json:"accountId"`
-	ClientKeepAlive              int               `json:"clientKeepAlive"`
-	ConnectionDrainingTimeout    int               `json:"connectionDrainingTimeout"`
-	CreatedAt                    metav1.Time       `json:"createdAt"`
+	// +optional
+	AccountID                    string            `json:"accountId,omitempty"`
+	// +optional
+	ClientKeepAlive              int               `json:"clientKeepAlive,omitempty"`
+	// +optional
+	ConnectionDrainingTimeout    int               `json:"connectionDrainingTimeout,omitempty"`
+	// +optional
+	CreatedAt                    metav1.Time       `json:"createdAt,omitempty"`
+	// +optional
 	DeploymentStatus             *DeploymentStatus `json:"deploymentStatus,omitempty"`
-	DNSName                      string            `json:"dnsName"`
-	Ec2IamRole                   string            `json:"ec2IamRole"`
-	EnableCrossZoneLoadBalancing string            `json:"enableCrossZoneLoadBalancing"`
-	EnableDeletionProtection     bool              `json:"enableDeletionProtection"`
-	EnableHttp2                  bool              `json:"enableHttp2"`
-	ExpiresAt                    int               `json:"expiresAt"`
-	ID                           string            `json:"id"`
-	IdleTimeout                  int               `json:"idleTimeout"`
-	Internal                     bool              `json:"internal"`
-	IPAddressType                string            `json:"ipAddressType"`
-	// LaunchConfig                 *LaunchConfig     `json:"launchConfig,omitempty"`
-	Name                         string            `json:"name"`
+	// +optional
+	DNSName                      string            `json:"dnsName,omitempty"`
+	// +optional
+	Ec2IamRole                   string            `json:"ec2IamRole,omitempty"`
+	// +optional
+	EnableCrossZoneLoadBalancing string            `json:"enableCrossZoneLoadBalancing,omitempty"`
+	// +optional
+	EnableDeletionProtection     bool              `json:"enableDeletionProtection,omitempty"`
+	// +optional
+	EnableHttp2                  bool              `json:"enableHttp2,omitempty"`
+	// +optional
+	ExpiresAt                    int               `json:"expiresAt,omitempty"`
+	// +optional
+	ID                           string            `json:"id,omitempty"`
+	// +optional
+	IdleTimeout                  int               `json:"idleTimeout,omitempty"`
+	// +optional
+	Internal                     bool              `json:"internal,omitempty"`
+	// +optional
+	IPAddressType                string            `json:"ipAddressType,omitempty"`
+	// +optional
+	Name                         string            `json:"name,omitempty"`
+	// +optional
 	NamePrefix                   string            `json:"namePrefix,omitempty"`
-	PreferredMaintenanceWindow   string            `json:"preferredMaintenanceWindow"`
-	PreserveHostHeader           bool              `json:"preserveHostHeader"`
-	SecurityGroups               []string          `json:"securityGroups"`
-	State                        string            `json:"state"`
-	Subnets                      []string          `json:"subnets"`
-	Tags                         map[string]string `json:"tags"`
-	UpdatedAt                    metav1.Time       `json:"updatedAt"`
-	URI                          string            `json:"uri"`
-	XffHeaderProcessingMode      string            `json:"xffHeaderProcessingMode"`
-	ZoneID                       string            `json:"zoneId"`
-	ZoneName                     string            `json:"zoneName"`
+	// +optional
+	PreferredMaintenanceWindow   string            `json:"preferredMaintenanceWindow,omitempty"`
+	// +optional
+	PreserveHostHeader           bool              `json:"preserveHostHeader,omitempty"`
+	// +optional
+	SecurityGroups               []string          `json:"securityGroups,omitempty"`
+	// +optional
+	State                        string            `json:"state,omitempty"`
+	// +optional
+	Subnets                      []string          `json:"subnets,omitempty"`
+	// +optional
+	Tags                         map[string]string `json:"tags,omitempty"`
+	// +optional
+	UpdatedAt                    metav1.Time       `json:"updatedAt,omitempty"`
+	// +optional
+	URI                          string            `json:"uri,omitempty"`
+	// +optional
+	XffHeaderProcessingMode      string            `json:"xffHeaderProcessingMode,omitempty"`
+	// +optional
+	ZoneID                       string            `json:"zoneId,omitempty"`
+	// +optional
+	ZoneName                     string            `json:"zoneName,omitempty"`
 }
 
 // HostedLoadBalancerObservation are the observable fields of a HostedLoadBalancer.

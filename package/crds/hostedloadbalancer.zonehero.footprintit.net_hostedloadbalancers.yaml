@@ -75,7 +75,6 @@ spec:
                   of a HostedLoadBalancer.
                 properties:
                   accountId:
-                    description: AccessLogs                   *AccessLogs       `json:"accessLogs,omitempty"`
                     type: string
                   clientKeepAlive:
                     type: integer
@@ -115,7 +114,6 @@ spec:
                   ipAddressType:
                     type: string
                   name:
-                    description: LaunchConfig                 *LaunchConfig     `json:"launchConfig,omitempty"`
                     type: string
                   namePrefix:
                     type: string
@@ -148,33 +146,6 @@ spec:
                     type: string
                   zoneName:
                     type: string
-                required:
-                - accountId
-                - clientKeepAlive
-                - connectionDrainingTimeout
-                - createdAt
-                - dnsName
-                - ec2IamRole
-                - enableCrossZoneLoadBalancing
-                - enableDeletionProtection
-                - enableHttp2
-                - expiresAt
-                - id
-                - idleTimeout
-                - internal
-                - ipAddressType
-                - name
-                - preferredMaintenanceWindow
-                - preserveHostHeader
-                - securityGroups
-                - state
-                - subnets
-                - tags
-                - updatedAt
-                - uri
-                - xffHeaderProcessingMode
-                - zoneId
-                - zoneName
                 type: object
               managementPolicies:
                 default:
