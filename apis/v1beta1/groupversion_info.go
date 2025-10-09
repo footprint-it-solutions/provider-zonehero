@@ -14,11 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package v1alpha1 contains the core resources of the ZoneHero provider.
+// Package v1beta1 contains the core resources of the ZoneHero provider.
 // +kubebuilder:object:generate=true
 // +groupName=zonehero.footprintit.net
-// +versionName=v1alpha1
-package v1alpha1
+// +versionName=v1beta1
+package v1beta1
 
 import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -28,7 +28,7 @@ import (
 // Package type metadata.
 const (
 	Group   = "zonehero.footprintit.net"
-	Version = "v1alpha1"
+	Version = "v1beta1"
 )
 
 var (

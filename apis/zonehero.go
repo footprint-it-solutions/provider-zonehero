@@ -20,13 +20,15 @@ package apis
 import (
 	"k8s.io/apimachinery/pkg/runtime"
 
-	zoneherov1alpha1 "github.com/footprint-it-solutions/provider-zonehero/apis/v1alpha1"
+	hostedloadbalancerv1alpha1 "github.com/footprint-it-solutions/provider-zonehero/apis/hostedloadbalancer/v1alpha1"
+	zoneherov1beta1 "github.com/footprint-it-solutions/provider-zonehero/apis/v1beta1"
 )
 
 func init() {
 	// Register the types with the Scheme so the components can map objects to GroupVersionKinds and back
 	AddToSchemes = append(AddToSchemes,
-		zoneherov1alpha1.SchemeBuilder.AddToScheme,
+		zoneherov1beta1.SchemeBuilder.AddToScheme,
+		hostedloadbalancerv1alpha1.SchemeBuilder.AddToScheme,
 	)
 }
 

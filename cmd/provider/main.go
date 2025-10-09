@@ -46,7 +46,7 @@ import (
 	"github.com/crossplane/crossplane-runtime/pkg/statemetrics"
 
 	"github.com/footprint-it-solutions/provider-zonehero/apis"
-	"github.com/footprint-it-solutions/provider-zonehero/apis/v1alpha1"
+	"github.com/footprint-it-solutions/provider-zonehero/apis/v1beta1"
 	zonehero "github.com/footprint-it-solutions/provider-zonehero/internal/controller"
 	"github.com/footprint-it-solutions/provider-zonehero/internal/features"
 	"github.com/footprint-it-solutions/provider-zonehero/internal/version"
@@ -135,11 +135,11 @@ func main() {
 		log.Info("Alpha feature enabled", "flag", features.EnableAlphaExternalSecretStores)
 
 		// Ensure default store config exists.
-		kingpin.FatalIfError(resource.Ignore(kerrors.IsAlreadyExists, mgr.GetClient().Create(context.Background(), &v1alpha1.StoreConfig{
+		kingpin.FatalIfError(resource.Ignore(kerrors.IsAlreadyExists, mgr.GetClient().Create(context.Background(), &v1beta1.StoreConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "default",
 			},
-			Spec: v1alpha1.StoreConfigSpec{
+			Spec: v1beta1.StoreConfigSpec{
 				// NOTE(turkenh): We only set required spec and expect optional
 				// ones to properly be initialized with CRD level default values.
 				SecretStoreConfig: xpv1.SecretStoreConfig{
