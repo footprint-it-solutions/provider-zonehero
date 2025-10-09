@@ -4,18 +4,18 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.16.5
-  name: mytypes.sample.template.crossplane.io
+  name: hostedloadbalancers.hostedloadbalancer.zonehero.footprintit.net
 spec:
-  group: sample.template.crossplane.io
+  group: hostedloadbalancer.zonehero.footprintit.net
   names:
     categories:
     - crossplane
     - managed
-    - template
-    kind: MyType
-    listKind: MyTypeList
-    plural: mytypes
-    singular: mytype
+    - zonehero
+    kind: HostedLoadBalancer
+    listKind: HostedLoadBalancerList
+    plural: hostedloadbalancers
+    singular: hostedloadbalancer
   scope: Cluster
   versions:
   - additionalPrinterColumns:
@@ -34,7 +34,7 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: A MyType is an example API type.
+        description: A HostedLoadBalancer is an example API type.
         properties:
           apiVersion:
             description: |-
@@ -54,7 +54,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: A MyTypeSpec defines the desired state of a MyType.
+            description: A HostedLoadBalancerSpec defines the desired state of a HostedLoadBalancer.
             properties:
               deletionPolicy:
                 default: Delete
@@ -71,12 +71,110 @@ spec:
                 - Delete
                 type: string
               forProvider:
-                description: MyTypeParameters are the configurable fields of a MyType.
+                description: HostedLoadBalancerParameters are the configurable fields
+                  of a HostedLoadBalancer.
                 properties:
-                  configurableField:
+                  accountId:
+                    description: AccessLogs                   *AccessLogs       `json:"accessLogs,omitempty"`
+                    type: string
+                  clientKeepAlive:
+                    type: integer
+                  connectionDrainingTimeout:
+                    type: integer
+                  createdAt:
+                    format: date-time
+                    type: string
+                  deploymentStatus:
+                    properties:
+                      errorMessage:
+                        type: string
+                      metadata:
+                        format: byte
+                        type: string
+                      version:
+                        type: string
+                    type: object
+                  dnsName:
+                    type: string
+                  ec2IamRole:
+                    type: string
+                  enableCrossZoneLoadBalancing:
+                    type: string
+                  enableDeletionProtection:
+                    type: boolean
+                  enableHttp2:
+                    type: boolean
+                  expiresAt:
+                    type: integer
+                  id:
+                    type: string
+                  idleTimeout:
+                    type: integer
+                  internal:
+                    type: boolean
+                  ipAddressType:
+                    type: string
+                  name:
+                    description: LaunchConfig                 *LaunchConfig     `json:"launchConfig,omitempty"`
+                    type: string
+                  namePrefix:
+                    type: string
+                  preferredMaintenanceWindow:
+                    type: string
+                  preserveHostHeader:
+                    type: boolean
+                  securityGroups:
+                    items:
+                      type: string
+                    type: array
+                  state:
+                    type: string
+                  subnets:
+                    items:
+                      type: string
+                    type: array
+                  tags:
+                    additionalProperties:
+                      type: string
+                    type: object
+                  updatedAt:
+                    format: date-time
+                    type: string
+                  uri:
+                    type: string
+                  xffHeaderProcessingMode:
+                    type: string
+                  zoneId:
+                    type: string
+                  zoneName:
                     type: string
                 required:
-                - configurableField
+                - accountId
+                - clientKeepAlive
+                - connectionDrainingTimeout
+                - createdAt
+                - dnsName
+                - ec2IamRole
+                - enableCrossZoneLoadBalancing
+                - enableDeletionProtection
+                - enableHttp2
+                - expiresAt
+                - id
+                - idleTimeout
+                - internal
+                - ipAddressType
+                - name
+                - preferredMaintenanceWindow
+                - preserveHostHeader
+                - securityGroups
+                - state
+                - subnets
+                - tags
+                - updatedAt
+                - uri
+                - xffHeaderProcessingMode
+                - zoneId
+                - zoneName
                 type: object
               managementPolicies:
                 default:
@@ -246,10 +344,12 @@ spec:
             - forProvider
             type: object
           status:
-            description: A MyTypeStatus represents the observed state of a MyType.
+            description: A HostedLoadBalancerStatus represents the observed state
+              of a HostedLoadBalancer.
             properties:
               atProvider:
-                description: MyTypeObservation are the observable fields of a MyType.
+                description: HostedLoadBalancerObservation are the observable fields
+                  of a HostedLoadBalancer.
                 properties:
                   configurableField:
                     type: string

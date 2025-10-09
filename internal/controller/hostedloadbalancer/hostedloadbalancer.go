@@ -14,10 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package mytype
+package hostedloadbalancer
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/crossplane/crossplane-runtime/pkg/feature"
@@ -27,6 +28,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/crossplane/crossplane-runtime/pkg/meta"
+
 	"github.com/crossplane/crossplane-runtime/pkg/connection"
 	"github.com/crossplane/crossplane-runtime/pkg/controller"
 	"github.com/crossplane/crossplane-runtime/pkg/event"
@@ -35,19 +38,33 @@ import (
 	"github.com/crossplane/crossplane-runtime/pkg/resource"
 	"github.com/crossplane/crossplane-runtime/pkg/statemetrics"
 
-	"github.com/crossplane/provider-template/apis/sample/v1alpha1"
-	apisv1alpha1 "github.com/crossplane/provider-template/apis/v1alpha1"
-	"github.com/crossplane/provider-template/internal/features"
+	"github.com/footprint-it-solutions/provider-zonehero/apis/hostedloadbalancer/v1alpha1"
+	apisv1alpha1 "github.com/footprint-it-solutions/provider-zonehero/apis/v1alpha1"
+	"github.com/footprint-it-solutions/provider-zonehero/internal/features"
+
+	"gitlab.guerraz.net/HLB/hlb-terraform-provider/hlb"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
 )
 
 const (
-	errNotMyType    = "managed resource is not a MyType custom resource"
+	errNotHostedLoadBalancer    = "managed resource is not a HostedLoadBalancer custom resource"
 	errTrackPCUsage = "cannot track ProviderConfig usage"
 	errGetPC        = "cannot get ProviderConfig"
 	errGetCreds     = "cannot get credentials"
 
-	errNewClient = "cannot create new Service"
+	errGetLoadBalancer = "cannot get LoadBalancer"
+	errGetSecret       = "cannot get credentials Secret"
+	errNewClient       = "cannot create HLB client"
+	errCreateLB        = "cannot create load balancer"
+	errDescribeLB      = "cannot describe load balancer"
+	errUpdateLB        = "cannot update load balancer"
+	errDeleteLB        = "cannot delete load balancer"
+	errUpdateStatus    = "cannot update LoadBalancer status"
 )
+
+
+
 
 // A NoOpService does nothing.
 type NoOpService struct{}
@@ -56,9 +73,9 @@ var (
 	newNoOpService = func(_ []byte) (interface{}, error) { return &NoOpService{}, nil }
 )
 
-// Setup adds a controller that reconciles MyType managed resources.
+// Setup adds a controller that reconciles HostedLoadBalancer managed resources.
 func Setup(mgr ctrl.Manager, o controller.Options) error {
-	name := managed.ControllerName(v1alpha1.MyTypeGroupKind)
+	name := managed.ControllerName(v1alpha1.HostedLoadBalancerGroupKind)
 
 	cps := []managed.ConnectionPublisher{managed.NewAPISecretPublisher(mgr.GetClient(), mgr.GetScheme())}
 	if o.Features.Enabled(features.EnableAlphaExternalSecretStores) {
@@ -69,7 +86,7 @@ func Setup(mgr ctrl.Manager, o controller.Options) error {
 		managed.WithExternalConnecter(&connector{
 			kube:         mgr.GetClient(),
 			usage:        resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1alpha1.ProviderConfigUsage{}),
-			newServiceFn: newNoOpService}),
+			newClientFn: hlb.NewClient}),
 		managed.WithLogger(o.Logger.WithValues("controller", name)),
 		managed.WithPollInterval(o.PollInterval),
 		managed.WithRecorder(event.NewAPIRecorder(mgr.GetEventRecorderFor(name))),
@@ -87,20 +104,20 @@ func Setup(mgr ctrl.Manager, o controller.Options) error {
 
 	if o.MetricOptions != nil && o.MetricOptions.MRStateMetrics != nil {
 		stateMetricsRecorder := statemetrics.NewMRStateRecorder(
-			mgr.GetClient(), o.Logger, o.MetricOptions.MRStateMetrics, &v1alpha1.MyTypeList{}, o.MetricOptions.PollStateMetricInterval,
+			mgr.GetClient(), o.Logger, o.MetricOptions.MRStateMetrics, &v1alpha1.HostedLoadBalancerList{}, o.MetricOptions.PollStateMetricInterval,
 		)
 		if err := mgr.Add(stateMetricsRecorder); err != nil {
-			return errors.Wrap(err, "cannot register MR state metrics recorder for kind v1alpha1.MyTypeList")
+			return errors.Wrap(err, "cannot register MR state metrics recorder for kind v1alpha1.HostedLoadBalancerList")
 		}
 	}
 
-	r := managed.NewReconciler(mgr, resource.ManagedKind(v1alpha1.MyTypeGroupVersionKind), opts...)
+	r := managed.NewReconciler(mgr, resource.ManagedKind(v1alpha1.HostedLoadBalancerGroupVersionKind), opts...)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(name).
 		WithOptions(o.ForControllerRuntime()).
 		WithEventFilter(resource.DesiredStateChanged()).
-		For(&v1alpha1.MyType{}).
+		For(&v1alpha1.HostedLoadBalancer{}).
 		Complete(ratelimiter.NewReconciler(name, r, o.GlobalRateLimiter))
 }
 
@@ -109,7 +126,7 @@ func Setup(mgr ctrl.Manager, o controller.Options) error {
 type connector struct {
 	kube         client.Client
 	usage        resource.Tracker
-	newServiceFn func(creds []byte) (interface{}, error)
+	newClientFn func(ctx context.Context, apiKey string, awsConfig aws.Config, partition string) (*hlb.Client, error)
 }
 
 // Connect typically produces an ExternalClient by:
@@ -118,9 +135,9 @@ type connector struct {
 // 3. Getting the credentials specified by the ProviderConfig.
 // 4. Using the credentials to form a client.
 func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.ExternalClient, error) {
-	cr, ok := mg.(*v1alpha1.MyType)
+	cr, ok := mg.(*v1alpha1.HostedLoadBalancer)
 	if !ok {
-		return nil, errors.New(errNotMyType)
+		return nil, errors.New(errNotHostedLoadBalancer)
 	}
 
 	if err := c.usage.Track(ctx, mg); err != nil {
@@ -138,12 +155,41 @@ func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.E
 		return nil, errors.Wrap(err, errGetCreds)
 	}
 
-	svc, err := c.newServiceFn(data)
+	type Credentials struct {
+		APIKey string `json:"api_key"`
+		AWSRegion string `json:"aws_region"`
+		AWSProfile string `json:"aws_profile"`
+		AWSPartition string `json:"partition"`
+	}
+
+	var creds Credentials
+	if err := json.Unmarshal(data, &creds); err != nil {
+		return nil, errors.Wrap(err, "cannot unmarshal credentials from secret")
+	}
+
+	opts := []func(*config.LoadOptions) error{}
+
+	apiKey := creds.APIKey
+	
+	if creds.AWSRegion != "" {
+		opts = append(opts, config.WithRegion(creds.AWSRegion))
+	}
+
+	if creds.AWSProfile != "" {
+		opts = append(opts, config.WithSharedConfigProfile(creds.AWSProfile))
+	}
+
+	awsCfg, err := config.LoadDefaultConfig(ctx, opts...)
+	if err != nil {
+		return nil, fmt.Errorf("error loading AWS config: %v", err)
+	}
+
+	svc, err := c.newClientFn(ctx, apiKey, awsCfg, creds.AWSPartition)
 	if err != nil {
 		return nil, errors.Wrap(err, errNewClient)
 	}
 
-	return &external{service: svc}, nil
+	return &external{hlb: svc}, nil
 }
 
 // An ExternalClient observes, then either creates, updates, or deletes an
@@ -151,13 +197,13 @@ func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.E
 type external struct {
 	// A 'client' used to connect to the external resource API. In practice this
 	// would be something like an AWS SDK client.
-	service interface{}
+	hlb *hlb.Client
 }
 
 func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	cr, ok := mg.(*v1alpha1.MyType)
+	cr, ok := mg.(*v1alpha1.HostedLoadBalancer)
 	if !ok {
-		return managed.ExternalObservation{}, errors.New(errNotMyType)
+		return managed.ExternalObservation{}, errors.New(errNotHostedLoadBalancer)
 	}
 
 	// These fmt statements should be removed in the real implementation.
@@ -181,12 +227,38 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 }
 
 func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	cr, ok := mg.(*v1alpha1.MyType)
+	cr, ok := mg.(*v1alpha1.HostedLoadBalancer)
 	if !ok {
-		return managed.ExternalCreation{}, errors.New(errNotMyType)
+		return managed.ExternalCreation{}, errors.New(errNotHostedLoadBalancer)
 	}
 
 	fmt.Printf("Creating: %+v", cr)
+	// Build create request
+	input := &hlb.LoadBalancerCreate{
+		Name:                         cr.Spec.ForProvider.Name,
+		Internal:                     cr.Spec.ForProvider.Internal,
+		Subnets:                      cr.Spec.ForProvider.Subnets,
+		SecurityGroups:               cr.Spec.ForProvider.SecurityGroups,
+		Ec2IamRole:                   cr.Spec.ForProvider.Ec2IamRole,
+		EnableDeletionProtection:     cr.Spec.ForProvider.EnableDeletionProtection,
+		EnableHttp2:                  cr.Spec.ForProvider.EnableHttp2,
+		IdleTimeout:                  cr.Spec.ForProvider.IdleTimeout,
+		IPAddressType:                cr.Spec.ForProvider.IPAddressType,
+		PreserveHostHeader:           cr.Spec.ForProvider.PreserveHostHeader,
+		EnableCrossZoneLoadBalancing: cr.Spec.ForProvider.EnableCrossZoneLoadBalancing,
+		ClientKeepAlive:              cr.Spec.ForProvider.ClientKeepAlive,
+		XffHeaderProcessingMode:      cr.Spec.ForProvider.XffHeaderProcessingMode,
+		ConnectionDrainingTimeout:    cr.Spec.ForProvider.ConnectionDrainingTimeout,
+		PreferredMaintenanceWindow:   cr.Spec.ForProvider.PreferredMaintenanceWindow,
+		Tags:                         cr.Spec.ForProvider.Tags,
+		ZoneID:                       cr.Spec.ForProvider.ZoneID,
+		ZoneName:                     cr.Spec.ForProvider.ZoneName,
+	}
+
+	_, err := c.hlb.CreateLoadBalancer(ctx, input)
+	if err != nil {
+		return managed.ExternalCreation{}, errors.Wrap(err, errCreateLB)
+	}
 
 	return managed.ExternalCreation{
 		// Optionally return any details that may be required to connect to the
@@ -196,12 +268,33 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
-	cr, ok := mg.(*v1alpha1.MyType)
+	cr, ok := mg.(*v1alpha1.HostedLoadBalancer)
 	if !ok {
-		return managed.ExternalUpdate{}, errors.New(errNotMyType)
+		return managed.ExternalUpdate{}, errors.New(errNotHostedLoadBalancer)
 	}
 
+	input := &hlb.LoadBalancerUpdate{
+			Name:                         &cr.Spec.ForProvider.Name,
+			Ec2IamRole:                   &cr.Spec.ForProvider.Ec2IamRole,
+			EnableDeletionProtection:     &cr.Spec.ForProvider.EnableDeletionProtection,
+			EnableHttp2:                  &cr.Spec.ForProvider.EnableHttp2,
+			IdleTimeout:                  &cr.Spec.ForProvider.IdleTimeout,
+			PreserveHostHeader:           &cr.Spec.ForProvider.PreserveHostHeader,
+			EnableCrossZoneLoadBalancing: &cr.Spec.ForProvider.EnableCrossZoneLoadBalancing,
+			ClientKeepAlive:              &cr.Spec.ForProvider.ClientKeepAlive,
+			XffHeaderProcessingMode:      &cr.Spec.ForProvider.XffHeaderProcessingMode,
+			ConnectionDrainingTimeout:    &cr.Spec.ForProvider.ConnectionDrainingTimeout,
+			PreferredMaintenanceWindow:   &cr.Spec.ForProvider.PreferredMaintenanceWindow,
+			Tags:                         &cr.Spec.ForProvider.Tags,
+		}
+
+
 	fmt.Printf("Updating: %+v", cr)
+	id := meta.GetExternalName(cr)
+	_, err := c.hlb.UpdateLoadBalancer(ctx, id, input)
+	if err != nil {
+		return managed.ExternalUpdate{}, errors.Wrap(err, errUpdateLB)
+	}
 
 	return managed.ExternalUpdate{
 		// Optionally return any details that may be required to connect to the
@@ -211,16 +304,48 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
-	cr, ok := mg.(*v1alpha1.MyType)
+	cr, ok := mg.(*v1alpha1.HostedLoadBalancer)
 	if !ok {
-		return managed.ExternalDelete{}, errors.New(errNotMyType)
+		return managed.ExternalDelete{}, errors.New(errNotHostedLoadBalancer)
 	}
 
 	fmt.Printf("Deleting: %+v", cr)
+	id := meta.GetExternalName(cr)
+	err := c.hlb.DeleteLoadBalancer(ctx, id)
+	if err != nil {
+		return managed.ExternalDelete{}, errors.Wrap(err, errDeleteLB)
+	}
 
 	return managed.ExternalDelete{}, nil
 }
 
 func (c *external) Disconnect(ctx context.Context) error {
 	return nil
+}
+
+
+// Helper functions
+func stringValue(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
+}
+
+func boolValue(b *bool) bool {
+	if b == nil {
+		return false
+	}
+	return *b
+}
+
+func intValue(i *int) int {
+	if i == nil {
+		return 0
+	}
+	return *i
+}
+
+func ptrInt(i int) *int {
+	return &i
 }
