@@ -28,6 +28,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"github.com/crossplane/crossplane-runtime/pkg/meta"
 
 	"github.com/crossplane/crossplane-runtime/pkg/connection"
@@ -283,9 +284,9 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	// Set external name
 	meta.SetExternalName(cr, lb.ID)
-	
+
 	// Update status
-	cr.Status.AtProvider = &hlb.LoadBalancerObservation{
+	cr.Status.AtProvider = v1alpha1.HostedLoadBalancerObservation{
 		ID:        lb.ID,
 		DNSName:   lb.DNSName,
 		State:     lb.State,

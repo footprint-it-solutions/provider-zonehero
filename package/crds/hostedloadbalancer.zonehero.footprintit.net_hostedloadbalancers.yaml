@@ -319,15 +319,32 @@ spec:
               of a HostedLoadBalancer.
             properties:
               atProvider:
-                description: HostedLoadBalancerObservation are the observable fields
-                  of a HostedLoadBalancer.
+                description: LoadBalancerObservation are the observable fields of
+                  a LoadBalancer.
                 properties:
-                  configurableField:
+                  accountId:
+                    description: AccountID is the AWS account ID.
                     type: string
-                  observableField:
+                  createdAt:
+                    description: CreatedAt is when the load balancer was created.
+                    format: date-time
                     type: string
-                required:
-                - configurableField
+                  dnsName:
+                    description: DNSName is the DNS name of the load balancer.
+                    type: string
+                  id:
+                    description: ID is the unique identifier of the load balancer.
+                    type: string
+                  state:
+                    description: State is the current state of the load balancer.
+                    type: string
+                  updatedAt:
+                    description: UpdatedAt is when the load balancer was last updated.
+                    format: date-time
+                    type: string
+                  uri:
+                    description: URI is the API URI for the load balancer.
+                    type: string
                 type: object
               conditions:
                 description: Conditions of the resource.

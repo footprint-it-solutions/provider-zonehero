@@ -92,15 +92,8 @@ type HostedLoadBalancerParameters struct {
 	ZoneName                     string            `json:"zoneName,omitempty"`
 }
 
-// // HostedLoadBalancerObservation are the observable fields of a HostedLoadBalancer.
-// type HostedLoadBalancerObservation struct {
-// 	ConfigurableField string `json:"configurableField"`
-// 	ObservableField   string `json:"observableField,omitempty"`
-// }
-
-
 // LoadBalancerObservation are the observable fields of a LoadBalancer.
-type LoadBalancerObservation struct {
+type HostedLoadBalancerObservation struct {
 	// ID is the unique identifier of the load balancer.
 	ID string `json:"id,omitempty"`
 
