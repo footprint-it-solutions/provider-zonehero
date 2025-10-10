@@ -92,10 +92,35 @@ type HostedLoadBalancerParameters struct {
 	ZoneName                     string            `json:"zoneName,omitempty"`
 }
 
-// HostedLoadBalancerObservation are the observable fields of a HostedLoadBalancer.
-type HostedLoadBalancerObservation struct {
-	ConfigurableField string `json:"configurableField"`
-	ObservableField   string `json:"observableField,omitempty"`
+// // HostedLoadBalancerObservation are the observable fields of a HostedLoadBalancer.
+// type HostedLoadBalancerObservation struct {
+// 	ConfigurableField string `json:"configurableField"`
+// 	ObservableField   string `json:"observableField,omitempty"`
+// }
+
+
+// LoadBalancerObservation are the observable fields of a LoadBalancer.
+type LoadBalancerObservation struct {
+	// ID is the unique identifier of the load balancer.
+	ID string `json:"id,omitempty"`
+
+	// DNSName is the DNS name of the load balancer.
+	DNSName string `json:"dnsName,omitempty"`
+
+	// State is the current state of the load balancer.
+	State string `json:"state,omitempty"`
+
+	// AccountID is the AWS account ID.
+	AccountID string `json:"accountId,omitempty"`
+
+	// CreatedAt is when the load balancer was created.
+	CreatedAt *metav1.Time `json:"createdAt,omitempty"`
+
+	// UpdatedAt is when the load balancer was last updated.
+	UpdatedAt *metav1.Time `json:"updatedAt,omitempty"`
+
+	// URI is the API URI for the load balancer.
+	URI string `json:"uri,omitempty"`
 }
 
 // A HostedLoadBalancerSpec defines the desired state of a HostedLoadBalancer.

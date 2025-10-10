@@ -8,9 +8,10 @@ metadata:
     testing.upbound.io/example-name: example
 spec:
   forProvider:
+    name: footprint-hlb-test
     enableHttp2: true
     internal: false
-    name: footprint-hlb-test
+    ec2IamRole: lb-standard
     subnets:
     - subnet-07742d814a98f58da
     securityGroups:

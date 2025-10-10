@@ -43,6 +43,7 @@ import (
 	"github.com/footprint-it-solutions/provider-zonehero/internal/features"
 
 	"gitlab.guerraz.net/HLB/hlb-terraform-provider/hlb"
+	//"gitlab.guerraz.net/HLB/hlb-terraform-provider/apis/v1alpha1"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 )
@@ -184,6 +185,7 @@ func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.E
 		return nil, fmt.Errorf("error loading AWS config: %v", err)
 	}
 
+
 	svc, err := c.newClientFn(ctx, apiKey, awsCfg, creds.AWSPartition)
 	if err != nil {
 		return nil, errors.Wrap(err, errNewClient)
@@ -206,9 +208,26 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		return managed.ExternalObservation{}, errors.New(errNotHostedLoadBalancer)
 	}
 
-	// These fmt statements should be removed in the real implementation.
-	fmt.Printf("Observing: %+v", cr)
+	// // These fmt statements should be removed in the real implementation.
+	// fmt.Printf("Observing: %+v \n", cr)
 
+	// Check if resource exists
+	externalName := meta.GetExternalName(cr)
+	fmt.Printf("GetExternalName: %+v \n", externalName)
+
+	// use externalName in a call to the ZoneHero API, on first run this will give us 404 and we can trigger create method
+	// otherwise, if we receive 200 from the ZoneHero API then the load balancer exists
+
+	_, err := c.hlb.GetLoadBalancer(ctx, externalName)
+	if err != nil {
+		// Create new load balancer
+		return managed.ExternalObservation{
+			ResourceExists: false,
+		}, nil
+	}
+
+	// otherwise do some logic to find out if the load balancer is up-to-date
+	// ....
 	return managed.ExternalObservation{
 		// Return false when the external resource does not exist. This lets
 		// the managed resource reconciler know that it needs to call Create to
@@ -232,7 +251,9 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 		return managed.ExternalCreation{}, errors.New(errNotHostedLoadBalancer)
 	}
 
-	fmt.Printf("Creating: %+v", cr)
+	c.hlb.SetDebug(true)
+
+	fmt.Printf("Creating: %+v \n", cr)
 	// Build create request
 	input := &hlb.LoadBalancerCreate{
 		Name:                         cr.Spec.ForProvider.Name,
@@ -255,10 +276,26 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 		ZoneName:                     cr.Spec.ForProvider.ZoneName,
 	}
 
-	_, err := c.hlb.CreateLoadBalancer(ctx, input)
+	lb, err := c.hlb.CreateLoadBalancer(ctx, input)
 	if err != nil {
 		return managed.ExternalCreation{}, errors.Wrap(err, errCreateLB)
 	}
+
+	// Set external name
+	meta.SetExternalName(cr, lb.ID)
+	
+	// Update status
+	cr.Status.AtProvider = &hlb.LoadBalancerObservation{
+		ID:        lb.ID,
+		DNSName:   lb.DNSName,
+		State:     lb.State,
+		AccountID: lb.AccountID,
+		URI:       lb.URI,
+	}
+	if lb.CreatedAt.Unix() > 0 {
+		cr.Status.AtProvider.CreatedAt = &metav1.Time{Time: lb.CreatedAt}
+	}
+
 
 	return managed.ExternalCreation{
 		// Optionally return any details that may be required to connect to the
