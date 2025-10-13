@@ -12,7 +12,7 @@ spec:
     enableHttp2: true
     internal: false
     ec2IamRole: lb-standard
-    ipAddressType": ipv4
+    ipAddressType: ipv4
     subnets:
     - subnet-07742d814a98f58da
     securityGroups:

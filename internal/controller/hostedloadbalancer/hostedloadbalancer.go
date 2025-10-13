@@ -39,6 +39,7 @@ import (
 	"github.com/crossplane/crossplane-runtime/pkg/resource"
 	"github.com/crossplane/crossplane-runtime/pkg/statemetrics"
 
+	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
 	"github.com/footprint-it-solutions/provider-zonehero/apis/hostedloadbalancer/v1alpha1"
 	apisv1beta1 "github.com/footprint-it-solutions/provider-zonehero/apis/v1beta1"
 	"github.com/footprint-it-solutions/provider-zonehero/internal/features"
@@ -219,12 +220,18 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	// use externalName in a call to the ZoneHero API, on first run this will give us 404 and we can trigger create method
 	// otherwise, if we receive 200 from the ZoneHero API then the load balancer exists
 
-	_, err := c.hlb.GetLoadBalancer(ctx, externalName)
+	lb, err := c.hlb.GetLoadBalancer(ctx, externalName)
 	if err != nil {
 		// Create new load balancer
 		return managed.ExternalObservation{
 			ResourceExists: false,
 		}, nil
+	}
+
+	if lb.State == "active" {
+		cr.SetConditions(xpv1.Available())
+	} else {
+		cr.SetConditions(xpv1.Creating())
 	}
 
 	// otherwise do some logic to find out if the load balancer is up-to-date
@@ -256,26 +263,9 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	fmt.Printf("Creating: %+v \n", cr)
 	// Build create request
-	input := &hlb.LoadBalancerCreate{
-		Name:                         cr.Spec.ForProvider.Name,
-		Internal:                     cr.Spec.ForProvider.Internal,
-		Subnets:                      cr.Spec.ForProvider.Subnets,
-		SecurityGroups:               cr.Spec.ForProvider.SecurityGroups,
-		Ec2IamRole:                   cr.Spec.ForProvider.Ec2IamRole,
-		EnableDeletionProtection:     cr.Spec.ForProvider.EnableDeletionProtection,
-		EnableHttp2:                  cr.Spec.ForProvider.EnableHttp2,
-		IdleTimeout:                  cr.Spec.ForProvider.IdleTimeout,
-		IPAddressType:                cr.Spec.ForProvider.IPAddressType,
-		PreserveHostHeader:           cr.Spec.ForProvider.PreserveHostHeader,
-		EnableCrossZoneLoadBalancing: cr.Spec.ForProvider.EnableCrossZoneLoadBalancing,
-		ClientKeepAlive:              cr.Spec.ForProvider.ClientKeepAlive,
-		XffHeaderProcessingMode:      cr.Spec.ForProvider.XffHeaderProcessingMode,
-		ConnectionDrainingTimeout:    cr.Spec.ForProvider.ConnectionDrainingTimeout,
-		PreferredMaintenanceWindow:   cr.Spec.ForProvider.PreferredMaintenanceWindow,
-		Tags:                         cr.Spec.ForProvider.Tags,
-		ZoneID:                       cr.Spec.ForProvider.ZoneID,
-		ZoneName:                     cr.Spec.ForProvider.ZoneName,
-	}
+	input := GenerateCreateInput(&cr.Spec.ForProvider)
+
+	cr.SetConditions(xpv1.Creating())
 
 	lb, err := c.hlb.CreateLoadBalancer(ctx, input)
 	if err != nil {
@@ -347,6 +337,8 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 		return managed.ExternalDelete{}, errors.New(errNotHostedLoadBalancer)
 	}
 
+	c.hlb.SetDebug(true)
+
 	fmt.Printf("Deleting: %+v", cr)
 	id := meta.GetExternalName(cr)
 	err := c.hlb.DeleteLoadBalancer(ctx, id)
@@ -386,4 +378,32 @@ func intValue(i *int) int {
 
 func ptrInt(i int) *int {
 	return &i
+}
+
+
+// this helper function translates hlb.LoadBalancerCreate type to a type compatible with v1alpha1
+// By using a translation function (GenerateCreateInput), you gain complete control over how the 
+// hlb.LoadBalancerCreate struct is populated. This is the perfect place to implement your defaulting logic.
+// this helper gunction is required because of Golang strict type-checking
+func GenerateCreateInput(p *v1alpha1.HostedLoadBalancerParameters) *hlb.LoadBalancerCreate {
+    return &hlb.LoadBalancerCreate{
+		Name:                         p.Name,
+		Internal:                     p.Internal,
+		Subnets:                      p.Subnets,
+		SecurityGroups:               p.SecurityGroups,
+		Ec2IamRole:                   p.Ec2IamRole,
+		EnableDeletionProtection:     p.EnableDeletionProtection,
+		EnableHttp2:                  p.EnableHttp2,
+		IdleTimeout:                  p.IdleTimeout,
+		IPAddressType:                p.IPAddressType,
+		PreserveHostHeader:           p.PreserveHostHeader,
+		EnableCrossZoneLoadBalancing: p.EnableCrossZoneLoadBalancing,
+		ClientKeepAlive:              p.ClientKeepAlive,
+		XffHeaderProcessingMode:      p.XffHeaderProcessingMode,
+		ConnectionDrainingTimeout:    p.ConnectionDrainingTimeout,
+		PreferredMaintenanceWindow:   p.PreferredMaintenanceWindow,
+		Tags:                         p.Tags,
+		ZoneID:                       p.ZoneID,
+		ZoneName:                     p.ZoneName,
+    }
 }

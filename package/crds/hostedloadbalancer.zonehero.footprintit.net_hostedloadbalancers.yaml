@@ -77,8 +77,10 @@ spec:
                   accountId:
                     type: string
                   clientKeepAlive:
+                    default: 3600
                     type: integer
                   connectionDrainingTimeout:
+                    default: 10
                     type: integer
                   createdAt:
                     format: date-time
@@ -96,30 +98,39 @@ spec:
                   dnsName:
                     type: string
                   ec2IamRole:
+                    default: lb-standard
                     type: string
                   enableCrossZoneLoadBalancing:
+                    default: avoid
                     type: string
                   enableDeletionProtection:
+                    default: false
                     type: boolean
                   enableHttp2:
+                    default: true
                     type: boolean
                   expiresAt:
                     type: integer
                   id:
                     type: string
                   idleTimeout:
+                    default: 60
                     type: integer
                   internal:
+                    default: false
                     type: boolean
                   ipAddressType:
+                    default: ipv4
                     type: string
                   name:
                     type: string
                   namePrefix:
                     type: string
                   preferredMaintenanceWindow:
+                    default: ""
                     type: string
                   preserveHostHeader:
+                    default: false
                     type: boolean
                   securityGroups:
                     items:
@@ -141,6 +152,7 @@ spec:
                   uri:
                     type: string
                   xffHeaderProcessingMode:
+                    default: append
                     type: string
                   zoneId:
                     type: string

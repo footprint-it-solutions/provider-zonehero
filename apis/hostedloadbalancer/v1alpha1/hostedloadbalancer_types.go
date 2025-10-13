@@ -37,8 +37,10 @@ type HostedLoadBalancerParameters struct {
 	// +optional
 	AccountID                    string            `json:"accountId,omitempty"`
 	// +optional
+	// +kubebuilder:default=3600
 	ClientKeepAlive              int               `json:"clientKeepAlive,omitempty"`
 	// +optional
+	// +kubebuilder:default=10
 	ConnectionDrainingTimeout    int               `json:"connectionDrainingTimeout,omitempty"`
 	// +optional
 	CreatedAt                    metav1.Time       `json:"createdAt,omitempty"`
@@ -47,30 +49,39 @@ type HostedLoadBalancerParameters struct {
 	// +optional
 	DNSName                      string            `json:"dnsName,omitempty"`
 	// +optional
+	// +kubebuilder:default=lb-standard
 	Ec2IamRole                   string            `json:"ec2IamRole,omitempty"`
 	// +optional
+	// +kubebuilder:default=avoid
 	EnableCrossZoneLoadBalancing string            `json:"enableCrossZoneLoadBalancing,omitempty"`
 	// +optional
+	// +kubebuilder:default=false
 	EnableDeletionProtection     bool              `json:"enableDeletionProtection,omitempty"`
 	// +optional
+	// +kubebuilder:default=true
 	EnableHttp2                  bool              `json:"enableHttp2,omitempty"`
 	// +optional
 	ExpiresAt                    int               `json:"expiresAt,omitempty"`
 	// +optional
 	ID                           string            `json:"id,omitempty"`
 	// +optional
+	// +kubebuilder:default=60
 	IdleTimeout                  int               `json:"idleTimeout,omitempty"`
 	// +optional
+	// +kubebuilder:default=false
 	Internal                     bool              `json:"internal,omitempty"`
 	// +optional
+	// +kubebuilder:default=ipv4
 	IPAddressType                string            `json:"ipAddressType,omitempty"`
 	// +optional
 	Name                         string            `json:"name,omitempty"`
 	// +optional
 	NamePrefix                   string            `json:"namePrefix,omitempty"`
 	// +optional
+	// +kubebuilder:default=""
 	PreferredMaintenanceWindow   string            `json:"preferredMaintenanceWindow,omitempty"`
 	// +optional
+	// +kubebuilder:default=false
 	PreserveHostHeader           bool              `json:"preserveHostHeader,omitempty"`
 	// +optional
 	SecurityGroups               []string          `json:"securityGroups,omitempty"`
@@ -85,12 +96,14 @@ type HostedLoadBalancerParameters struct {
 	// +optional
 	URI                          string            `json:"uri,omitempty"`
 	// +optional
+	// +kubebuilder:default=append
 	XffHeaderProcessingMode      string            `json:"xffHeaderProcessingMode,omitempty"`
 	// +optional
 	ZoneID                       string            `json:"zoneId,omitempty"`
 	// +optional
 	ZoneName                     string            `json:"zoneName,omitempty"`
 }
+
 
 // LoadBalancerObservation are the observable fields of a LoadBalancer.
 type HostedLoadBalancerObservation struct {
