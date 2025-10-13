@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/crossplane/crossplane-runtime/pkg/feature"
 
@@ -64,9 +65,30 @@ const (
 	errUpdateLB        = "cannot update load balancer"
 	errDeleteLB        = "cannot delete load balancer"
 	errUpdateStatus    = "cannot update LoadBalancer status"
+
+	LBCrossAZPolicyAvoid   = "avoid"
+	LBCrossAZPolicyFull    = "full"
+	LBCrossAZPolicyOff     = "off"
+	LBEc2IamRoleDebug      = "lb-ssm"
+	LBEc2IamRoleStandard   = "lb-standard"
+	LBIpAddressDualStack   = "dualstack"
+	LBIpAddressTypeV4Only  = "ipv4"
+	LBIpAddressTypeV6Only  = "dualstack-without-public-ipv4"
+	LBStateActive          = "active"
+	LBStateCreating        = "creating"
+	LBStateDeleted         = "deleted"
+	LBStateDeleting        = "deleting"
+	LBStateFailed          = "failed"
+	LBStatePendingCreation = "pending_creation"
+	LBStatePendingDeletion = "pending_delete"
+	LBStatePendingUpdate   = "pending_update"
+	LBStateUpdating        = "updating"
+
+	// Default timeouts
+	DefaultCreateTimeout = 30 * time.Minute
+	DefaultUpdateTimeout = 30 * time.Minute
+	DefaultDeleteTimeout = 30 * time.Minute
 )
-
-
 
 
 // A NoOpService does nothing.
@@ -228,11 +250,34 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		}, nil
 	}
 
-	if lb.State == "active" {
-		cr.SetConditions(xpv1.Available())
-	} else {
+	// | State            | Ready Condition (status, reason) | Synced Condition (status) | Helper Function to Use |
+	// | ---------------- | ---------------------------------| -------------------------| ---------------------- |
+	// | Pending Creation | False, Creating                  | False                    | xpv1.Creating()      |
+	// | Available        | True, Available                  | True                     | xpv1.Available()     |
+	// | Pending Update   | True, Available                  | False                    | (Return ResourceUpToDate: false from Observe) |
+	// | Pending Deletion | False, Deleting                  | True                     | xpv1.Deleting()      |
+	// | Failed/Error     | False, Unavailable               | False                    | xpv1.Unavailable()   |
+
+	switch lb.State {
+	case LBStatePendingCreation:
 		cr.SetConditions(xpv1.Creating())
+	case LBStateActive:
+		cr.SetConditions(xpv1.Available())
+	case LBStatePendingUpdate:
+		return managed.ExternalObservation{
+			ResourceUpToDate: false,
+		}, nil
+	case LBStatePendingDeletion:
+		cr.SetConditions(xpv1.Deleting())
+	case LBStateDeleting:
+		cr.SetConditions(xpv1.Deleting())
+	case LBStateFailed:
+		cr.SetConditions(xpv1.Unavailable().WithMessage("The external resource reported a failed state: " + lb.State))
+	default:
+		// If it's an unknown state, it's safest to consider it unavailable.
+		cr.SetConditions(xpv1.Unavailable().WithMessage("The external resource is in an unknown state: " + lb.State))
 	}
+
 
 	// otherwise do some logic to find out if the load balancer is up-to-date
 	// ....
@@ -338,6 +383,10 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 	}
 
 	c.hlb.SetDebug(true)
+
+	// Set the "Deleting" condition.
+    // This sets the Ready condition to False with a reason of "Deleting".
+    cr.SetConditions(xpv1.Deleting())
 
 	fmt.Printf("Deleting: %+v", cr)
 	id := meta.GetExternalName(cr)
