@@ -49,6 +49,8 @@ import (
 	//"gitlab.guerraz.net/HLB/hlb-terraform-provider/apis/v1alpha1"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
+
+	 "github.com/google/go-cmp/cmp"
 )
 
 const (
@@ -226,6 +228,8 @@ type external struct {
 	hlb *hlb.Client
 }
 
+// The process is a continuous loop that is triggered by any change to a HostedLoadBalancer resource or after a set poll interval (defaulting to 1 minute).
+// Every single loop starts with a call to the Observe method. The result of Observe determines what happens next.
 func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
 	cr, ok := mg.(*v1alpha1.HostedLoadBalancer)
 	if !ok {
@@ -235,13 +239,13 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	// // These fmt statements should be removed in the real implementation.
 	// fmt.Printf("Observing: %+v \n", cr)
 
-	// Check if resource exists
+	// Step 1: Check if the resource has been created yet.
+	// If the external-name annotation is not set, it means Create has not been called.
 	externalName := meta.GetExternalName(cr)
 	fmt.Printf("GetExternalName: %+v \n", externalName)
 
-	// use externalName in a call to the ZoneHero API, on first run this will give us 404 and we can trigger create method
+	// use the externalName in a call to the ZoneHero API, on first run this will give us 404 and we can trigger create method
 	// otherwise, if we receive 200 from the ZoneHero API then the load balancer exists
-
 	lb, err := c.hlb.GetLoadBalancer(ctx, externalName)
 	if err != nil {
 		// Create new load balancer
@@ -250,6 +254,28 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		}, nil
 	}
 
+	// Step 2: Update the status of your Kubernetes resource with what you observed.
+	// This is crucial for users to see the state of the external resource.
+	cr.Status.AtProvider = v1alpha1.HostedLoadBalancerObservation{
+		ID:        lb.ID,
+		DNSName:   lb.DNSName,
+		State:     lb.State,
+		AccountID: lb.AccountID,
+		URI:       lb.URI,
+	}
+	if lb.CreatedAt.Unix() > 0 {
+		cr.Status.AtProvider.CreatedAt = &metav1.Time{Time: lb.CreatedAt}
+	}
+
+
+	// Step 3: Set the Ready condition based on the observed state.
+	// if err == nil then it means that we can read lb.State
+
+	// the first state that a LB enters is LBStatePendingCreation , then LBStateCreating
+	// depending on the outcome of the provisioning step, the LB will transition to either LBStateActive  or LBStateFailed , both of which are final states (they will not change unless another operation is started from the API).
+	// when you modify a LB, similarly the state transitions to LBStatePendingUpdate , then LBStateUpdating , and again the LB will transition to LBStateActive  (as far as I remember, it cannot enter LBStateFailed , because the properties that can lead to that state are read only and require a redeployment, (like changing subnets))
+
+
 	// | State            | Ready Condition (status, reason) | Synced Condition (status) | Helper Function to Use |
 	// | ---------------- | ---------------------------------| -------------------------| ---------------------- |
 	// | Pending Creation | False, Creating                  | False                    | xpv1.Creating()      |
@@ -257,40 +283,40 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	// | Pending Update   | True, Available                  | False                    | (Return ResourceUpToDate: false from Observe) |
 	// | Pending Deletion | False, Deleting                  | True                     | xpv1.Deleting()      |
 	// | Failed/Error     | False, Unavailable               | False                    | xpv1.Unavailable()   |
-
 	switch lb.State {
 	case LBStatePendingCreation:
 		cr.SetConditions(xpv1.Creating())
+	case LBStateCreating:
+		cr.SetConditions(xpv1.Creating())
 	case LBStateActive:
 		cr.SetConditions(xpv1.Available())
-	case LBStatePendingUpdate:
-		return managed.ExternalObservation{
-			ResourceUpToDate: false,
-		}, nil
+	case LBStateFailed:
+		extendedErrorMessage := "None"
+		if lb.DeploymentStatus != nil && lb.DeploymentStatus.ErrorMessage != "" {
+			extendedErrorMessage = lb.DeploymentStatus.ErrorMessage
+		}
+		message := fmt.Sprintf("load balancer (%s) entered failed state, with message '%s'", lb.ID, extendedErrorMessage)
+		cr.SetConditions(xpv1.Unavailable().WithMessage(message))
 	case LBStatePendingDeletion:
 		cr.SetConditions(xpv1.Deleting())
 	case LBStateDeleting:
 		cr.SetConditions(xpv1.Deleting())
-	case LBStateFailed:
-		cr.SetConditions(xpv1.Unavailable().WithMessage("The external resource reported a failed state: " + lb.State))
+	case LBStateDeleted:
+		cr.SetConditions(xpv1.Unavailable().WithMessage("The external resource is not available as it was deleted."))
 	default:
 		// If it's an unknown state, it's safest to consider it unavailable.
 		cr.SetConditions(xpv1.Unavailable().WithMessage("The external resource is in an unknown state: " + lb.State))
 	}
 
 
-	// otherwise do some logic to find out if the load balancer is up-to-date
-	// ....
+	// Step 4: Call IsUpToDate to check for drift and return the final observation.
 	return managed.ExternalObservation{
-		// Return false when the external resource does not exist. This lets
-		// the managed resource reconciler know that it needs to call Create to
-		// (re)create the resource, or that it has successfully been deleted.
-		ResourceExists: true,
+		// The resource definitely exists at this point.
+		ResourceExists:   true,
 
-		// Return false when the external resource exists, but it not up to date
-		// with the desired managed resource state. This lets the managed
-		// resource reconciler know that it needs to call Update.
-		ResourceUpToDate: true,
+		// Call the helper function here. Its boolean result is assigned
+		// directly to the ResourceUpToDate field.
+		ResourceUpToDate: IsUpToDate(&cr.Spec.ForProvider, lb),
 
 		// Return any details that may be required to connect to the external
 		// resource. These will be stored as the connection secret.
@@ -455,4 +481,65 @@ func GenerateCreateInput(p *v1alpha1.HostedLoadBalancerParameters) *hlb.LoadBala
 		ZoneID:                       p.ZoneID,
 		ZoneName:                     p.ZoneName,
     }
+}
+
+
+// IsUpToDate checks ONLY the configurable fields.
+func IsUpToDate(p *v1alpha1.HostedLoadBalancerParameters, lb *hlb.LoadBalancer) bool {
+    // Compare a configurable field from the spec...
+    if p.ClientKeepAlive != lb.ClientKeepAlive {
+        return false
+    }
+    // ...with the corresponding field from the observed resource.
+
+    if p.ConnectionDrainingTimeout != lb.ConnectionDrainingTimeout {
+        return false
+    }
+
+	if p.Ec2IamRole != lb.Ec2IamRole {
+        return false
+    }
+	
+	if p.EnableCrossZoneLoadBalancing != lb.EnableCrossZoneLoadBalancing {
+        return false
+    }
+
+	if p.EnableDeletionProtection != lb.EnableDeletionProtection {
+        return false
+    }
+
+	if p.EnableHttp2 != lb.EnableHttp2 {
+        return false
+    }
+
+	if p.IdleTimeout != lb.IdleTimeout {
+        return false
+    }
+
+	if p.Name != lb.Name {
+        return false
+    }
+
+	if p.PreferredMaintenanceWindow != lb.PreferredMaintenanceWindow {
+        return false
+    }
+
+	if p.PreserveHostHeader != lb.PreserveHostHeader {
+        return false
+    }
+
+	if p.XffHeaderProcessingMode != lb.XffHeaderProcessingMode {
+        return false
+    }
+
+    // Use cmp.Equal for slices and maps
+	if !cmp.Equal(p.SecurityGroups, lb.SecurityGroups) {
+        return false
+    }
+	if !cmp.Equal(p.Tags, lb.Tags) {
+        return false
+    }
+
+
+	return true
 }
