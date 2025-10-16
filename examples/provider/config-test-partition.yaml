@@ -1,0 +1,11 @@
+apiVersion: zonehero.footprintit.net/v1beta1
+kind: ProviderConfig
+metadata:
+  name: zonehero-provider-test-partition
+spec:
+  credentials:
+    source: Secret
+    secretRef:
+      namespace: crossplane-system
+      name: zonehero-creds-test-partition
+      key: credentials
