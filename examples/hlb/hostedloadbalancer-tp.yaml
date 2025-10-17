@@ -1,0 +1,23 @@
+apiVersion: hostedloadbalancer.zonehero.footprintit.net/v1alpha1
+kind: HostedLoadBalancer
+metadata:
+  name: footprint-hlb-test
+  annotations:
+    meta.upbound.io/example-id: hlb/v1alpha1/hostedloadbalancer
+  labels:
+    testing.upbound.io/example-name: example
+spec:
+  forProvider:
+    name: footprint-hlb-test
+    enableHttp2: true
+    internal: false
+    ec2IamRole: lb-ssm
+    ipAddressType: ipv4
+    subnets:
+    - subnet-07742d814a98f58da
+    securityGroups:
+    - sg-0a03d2b266747b67f
+    zoneId: Z0100484379B8YR2UX43J
+    zoneName: k3s-devel.footprintit.net
+  providerConfigRef:
+    name: zonehero-provider-test-partition
