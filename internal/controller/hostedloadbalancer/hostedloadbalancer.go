@@ -20,7 +20,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"time"
 
 	"github.com/crossplane/crossplane-runtime/pkg/feature"
 
@@ -46,7 +45,6 @@ import (
 	"github.com/footprint-it-solutions/provider-zonehero/internal/features"
 
 	"gitlab.guerraz.net/HLB/hlb-terraform-provider/hlb"
-	//"gitlab.guerraz.net/HLB/hlb-terraform-provider/apis/v1alpha1"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 
@@ -59,23 +57,11 @@ const (
 	errGetPC        = "cannot get ProviderConfig"
 	errGetCreds     = "cannot get credentials"
 
-	errGetLoadBalancer = "cannot get LoadBalancer"
-	errGetSecret       = "cannot get credentials Secret"
 	errNewClient       = "cannot create HLB client"
 	errCreateLB        = "cannot create load balancer"
-	errDescribeLB      = "cannot describe load balancer"
 	errUpdateLB        = "cannot update load balancer"
 	errDeleteLB        = "cannot delete load balancer"
-	errUpdateStatus    = "cannot update LoadBalancer status"
 
-	LBCrossAZPolicyAvoid   = "avoid"
-	LBCrossAZPolicyFull    = "full"
-	LBCrossAZPolicyOff     = "off"
-	LBEc2IamRoleDebug      = "lb-ssm"
-	LBEc2IamRoleStandard   = "lb-standard"
-	LBIpAddressDualStack   = "dualstack"
-	LBIpAddressTypeV4Only  = "ipv4"
-	LBIpAddressTypeV6Only  = "dualstack-without-public-ipv4"
 	LBStateActive          = "active"
 	LBStateCreating        = "creating"
 	LBStateDeleted         = "deleted"
@@ -83,21 +69,6 @@ const (
 	LBStateFailed          = "failed"
 	LBStatePendingCreation = "pending_creation"
 	LBStatePendingDeletion = "pending_delete"
-	LBStatePendingUpdate   = "pending_update"
-	LBStateUpdating        = "updating"
-
-	// Default timeouts
-	DefaultCreateTimeout = 30 * time.Minute
-	DefaultUpdateTimeout = 30 * time.Minute
-	DefaultDeleteTimeout = 30 * time.Minute
-)
-
-
-// A NoOpService does nothing.
-type NoOpService struct{}
-
-var (
-	newNoOpService = func(_ []byte) (interface{}, error) { return &NoOpService{}, nil }
 )
 
 // Setup adds a controller that reconciles HostedLoadBalancer managed resources.
@@ -236,13 +207,9 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		return managed.ExternalObservation{}, errors.New(errNotHostedLoadBalancer)
 	}
 
-	// // These fmt statements should be removed in the real implementation.
-	// fmt.Printf("Observing: %+v \n", cr)
-
 	// Step 1: Check if the resource has been created yet.
 	// If the external-name annotation is not set, it means Create has not been called.
 	externalName := meta.GetExternalName(cr)
-	fmt.Printf("GetExternalName: %+v \n", externalName)
 
 	// use the externalName in a call to the ZoneHero API, on first run this will give us 404 and we can trigger create method
 	// otherwise, if we receive 200 from the ZoneHero API then the load balancer exists
@@ -362,7 +329,6 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	c.hlb.SetDebug(true)
 
-	fmt.Printf("Creating: %+v \n", cr)
 	// Build create request
 	input := GenerateCreateInput(&cr.Spec.ForProvider)
 
@@ -418,7 +384,6 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 		}
 
 
-	fmt.Printf("Updating: %+v", cr)
 	id := meta.GetExternalName(cr)
 	_, err := c.hlb.UpdateLoadBalancer(ctx, id, input)
 	if err != nil {
@@ -444,7 +409,6 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
     // This sets the Ready condition to False with a reason of "Deleting".
     cr.SetConditions(xpv1.Deleting())
 
-	fmt.Printf("Deleting: %+v", cr)
 	id := meta.GetExternalName(cr)
 	err := c.hlb.DeleteLoadBalancer(ctx, id)
 	if err != nil {
@@ -456,33 +420,6 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 
 func (c *external) Disconnect(ctx context.Context) error {
 	return nil
-}
-
-
-// Helper functions
-func stringValue(s *string) string {
-	if s == nil {
-		return ""
-	}
-	return *s
-}
-
-func boolValue(b *bool) bool {
-	if b == nil {
-		return false
-	}
-	return *b
-}
-
-func intValue(i *int) int {
-	if i == nil {
-		return 0
-	}
-	return *i
-}
-
-func ptrInt(i int) *int {
-	return &i
 }
 
 
