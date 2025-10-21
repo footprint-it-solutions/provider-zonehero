@@ -4,18 +4,18 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.18.0
-  name: hostedloadbalancers.hostedloadbalancer.zonehero.footprintit.net
+  name: listeners.listener.zonehero.footprintit.net
 spec:
-  group: hostedloadbalancer.zonehero.footprintit.net
+  group: listener.zonehero.footprintit.net
   names:
     categories:
     - crossplane
     - managed
     - zonehero
-    kind: HostedLoadBalancer
-    listKind: HostedLoadBalancerList
-    plural: hostedloadbalancers
-    singular: hostedloadbalancer
+    kind: Listener
+    listKind: ListenerList
+    plural: listeners
+    singular: listener
   scope: Cluster
   versions:
   - additionalPrinterColumns:
@@ -34,7 +34,7 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: A HostedLoadBalancer is an example API type.
+        description: A Listener is an example API type.
         properties:
           apiVersion:
             description: |-
@@ -54,7 +54,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: A HostedLoadBalancerSpec defines the desired state of a HostedLoadBalancer.
+            description: A ListenerSpec defines the desired state of a Listener.
             properties:
               deletionPolicy:
                 default: Delete
@@ -71,93 +71,47 @@ spec:
                 - Delete
                 type: string
               forProvider:
-                description: HostedLoadBalancerParameters are the configurable fields
-                  of a HostedLoadBalancer.
+                description: ListenerParameters are the configurable fields of a Listener.
                 properties:
-                  accountId:
+                  alpnPolicy:
                     type: string
-                  clientKeepAlive:
-                    default: 3600
-                    type: integer
-                  connectionDrainingTimeout:
-                    default: 10
-                    type: integer
+                  certificateSecretsName:
+                    type: string
                   createdAt:
                     format: date-time
-                    type: string
-                  deploymentStatus:
-                    properties:
-                      errorMessage:
-                        type: string
-                      metadata:
-                        format: byte
-                        type: string
-                      version:
-                        type: string
-                    type: object
-                  dnsName:
-                    type: string
-                  ec2IamRole:
-                    default: lb-standard
-                    type: string
-                  enableCrossZoneLoadBalancing:
-                    default: avoid
                     type: string
                   enableDeletionProtection:
                     default: false
                     type: boolean
-                  enableHttp2:
-                    default: true
-                    type: boolean
-                  expiresAt:
-                    type: integer
                   id:
                     type: string
-                  idleTimeout:
-                    default: 60
+                  loadBalancerId:
+                    type: string
+                  overprovisioningFactor:
+                    anyOf:
+                    - type: integer
+                    - type: string
+                    default: "1.1"
+                    pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                    x-kubernetes-int-or-string: true
+                  port:
                     type: integer
-                  internal:
-                    default: false
-                    type: boolean
-                  ipAddressType:
-                    default: ipv4
+                  protocol:
                     type: string
-                  name:
+                  targetGroupArn:
                     type: string
-                  namePrefix:
-                    type: string
-                  preferredMaintenanceWindow:
-                    default: ""
-                    type: string
-                  preserveHostHeader:
-                    default: false
-                    type: boolean
-                  securityGroups:
-                    items:
-                      type: string
-                    type: array
-                  state:
-                    type: string
-                  subnets:
-                    items:
-                      type: string
-                    type: array
-                  tags:
-                    additionalProperties:
-                      type: string
-                    type: object
                   updatedAt:
                     format: date-time
                     type: string
                   uri:
                     type: string
-                  xffHeaderProcessingMode:
-                    default: append
-                    type: string
-                  zoneId:
-                    type: string
-                  zoneName:
-                    type: string
+                required:
+                - enableDeletionProtection
+                - loadBalancerId
+                - overprovisioningFactor
+                - port
+                - protocol
+                - targetGroupArn
                 type: object
               managementPolicies:
                 default:
@@ -327,36 +281,31 @@ spec:
             - forProvider
             type: object
           status:
-            description: A HostedLoadBalancerStatus represents the observed state
-              of a HostedLoadBalancer.
+            description: A ListenerStatus represents the observed state of a Listener.
             properties:
               atProvider:
-                description: LoadBalancerObservation are the observable fields of
-                  a LoadBalancer.
                 properties:
-                  accountId:
-                    description: AccountID is the AWS account ID.
-                    type: string
                   createdAt:
-                    description: CreatedAt is when the load balancer was created.
+                    description: CreatedAt is when the listener was created.
                     format: date-time
-                    type: string
-                  dnsName:
-                    description: DNSName is the DNS name of the load balancer.
                     type: string
                   id:
-                    description: ID is the unique identifier of the load balancer.
+                    description: ID is the unique identifier of the listener.
                     type: string
-                  state:
-                    description: State is the current state of the load balancer.
-                    type: string
+                  overprovisioningFactor:
+                    anyOf:
+                    - type: integer
+                    - type: string
+                    description: Overprovisioning factor for the listener.
+                    pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                    x-kubernetes-int-or-string: true
                   updatedAt:
-                    description: UpdatedAt is when the load balancer was last updated.
+                    description: UpdatedAt is when the listener was last updated.
                     format: date-time
                     type: string
-                  uri:
-                    description: URI is the API URI for the load balancer.
-                    type: string
+                required:
+                - id
+                - overprovisioningFactor
                 type: object
               conditions:
                 description: Conditions of the resource.

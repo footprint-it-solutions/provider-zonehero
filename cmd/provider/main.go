@@ -46,6 +46,7 @@ import (
 	"github.com/crossplane/crossplane-runtime/pkg/statemetrics"
 
 	"github.com/footprint-it-solutions/provider-zonehero/apis"
+	_ "github.com/footprint-it-solutions/provider-zonehero/apis/listener/v1alpha1"
 	"github.com/footprint-it-solutions/provider-zonehero/apis/v1beta1"
 	zonehero "github.com/footprint-it-solutions/provider-zonehero/internal/controller"
 	"github.com/footprint-it-solutions/provider-zonehero/internal/features"

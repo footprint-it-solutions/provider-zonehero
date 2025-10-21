@@ -1,0 +1,13 @@
+apiVersion: listener.zonehero.footprintit.net/v1alpha1
+kind: Listener
+metadata:
+  name: footprint-hlb-test-listener
+spec:
+  forProvider:
+    loadBalancerId: "lb-315ba5520ae5b558"
+    port: 80
+    protocol: "HTTP"
+    targetGroupArn: "arn:aws:elasticloadbalancing:eu-west-1:203918840229:targetgroup/hlb-listener-test-tg/1622382a9f3ffd99"
+    overprovisioningFactor: "1.1"
+  providerConfigRef:
+    name: zonehero-provider-test-partition

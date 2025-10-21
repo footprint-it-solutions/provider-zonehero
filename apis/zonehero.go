@@ -21,6 +21,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	hostedloadbalancerv1alpha1 "github.com/footprint-it-solutions/provider-zonehero/apis/hostedloadbalancer/v1alpha1"
+	listenerv1alpha1 "github.com/footprint-it-solutions/provider-zonehero/apis/listener/v1alpha1"
 	zoneherov1beta1 "github.com/footprint-it-solutions/provider-zonehero/apis/v1beta1"
 )
 
@@ -29,6 +30,7 @@ func init() {
 	AddToSchemes = append(AddToSchemes,
 		zoneherov1beta1.SchemeBuilder.AddToScheme,
 		hostedloadbalancerv1alpha1.SchemeBuilder.AddToScheme,
+		listenerv1alpha1.SchemeBuilder.AddToScheme,
 	)
 }
 
