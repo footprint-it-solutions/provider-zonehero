@@ -88,12 +88,8 @@ spec:
                   loadBalancerId:
                     type: string
                   overprovisioningFactor:
-                    anyOf:
-                    - type: integer
-                    - type: string
-                    default: "1.1"
-                    pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                    x-kubernetes-int-or-string: true
+                    default: 1.1
+                    type: number
                   port:
                     type: integer
                   protocol:
@@ -108,7 +104,6 @@ spec:
                 required:
                 - enableDeletionProtection
                 - loadBalancerId
-                - overprovisioningFactor
                 - port
                 - protocol
                 - targetGroupArn
@@ -293,12 +288,8 @@ spec:
                     description: ID is the unique identifier of the listener.
                     type: string
                   overprovisioningFactor:
-                    anyOf:
-                    - type: integer
-                    - type: string
                     description: Overprovisioning factor for the listener.
-                    pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                    x-kubernetes-int-or-string: true
+                    type: number
                   updatedAt:
                     description: UpdatedAt is when the listener was last updated.
                     format: date-time

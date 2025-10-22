@@ -8,6 +8,6 @@ spec:
     port: 80
     protocol: "HTTP"
     targetGroupArn: "arn:aws:elasticloadbalancing:eu-west-1:203918840229:targetgroup/hlb-listener-test-tg/1622382a9f3ffd99"
-    overprovisioningFactor: "1.1"
+    overprovisioningFactor: 1.1
   providerConfigRef:
     name: zonehero-provider-test-partition

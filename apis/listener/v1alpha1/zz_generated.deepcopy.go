@@ -76,8 +76,8 @@ func (in *ListenerObservation) DeepCopyInto(out *ListenerObservation) {
 	*out = *in
 	if in.OverprovisioningFactor != nil {
 		in, out := &in.OverprovisioningFactor, &out.OverprovisioningFactor
-		x := (*in).DeepCopy()
-		*out = &x
+		*out = new(float64)
+		**out = **in
 	}
 	if in.CreatedAt != nil {
 		in, out := &in.CreatedAt, &out.CreatedAt
@@ -103,7 +103,6 @@ func (in *ListenerObservation) DeepCopy() *ListenerObservation {
 func (in *ListenerParameters) DeepCopyInto(out *ListenerParameters) {
 	*out = *in
 	in.CreatedAt.DeepCopyInto(&out.CreatedAt)
-	out.OverprovisioningFactor = in.OverprovisioningFactor.DeepCopy()
 	in.UpdatedAt.DeepCopyInto(&out.UpdatedAt)
 }
 
@@ -171,8 +170,8 @@ func (in *ListenerUpdate) DeepCopyInto(out *ListenerUpdate) {
 	}
 	if in.OverprovisioningFactor != nil {
 		in, out := &in.OverprovisioningFactor, &out.OverprovisioningFactor
-		x := (*in).DeepCopy()
-		*out = &x
+		*out = new(float64)
+		**out = **in
 	}
 	if in.Port != nil {
 		in, out := &in.Port, &out.Port

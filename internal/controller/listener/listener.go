@@ -34,7 +34,6 @@ import (
 	"github.com/crossplane/crossplane-runtime/pkg/resource"
 	"github.com/crossplane/crossplane-runtime/pkg/statemetrics"
 	"github.com/pkg/errors"
-	kresource "k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -199,8 +198,8 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		}, nil
 	}
 
-	// These fmt statements should be removed in the real implementation.
-	fmt.Printf("Observing: %+v", cr)
+	// // These fmt statements should be removed in the real implementation.
+	// fmt.Printf("Observing: %+v", cr)
 
 	// Step 1: Check if the resource has been created yet.
 	// If the external-name annotation is not set, it means Create has not been called.
@@ -216,6 +215,9 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 			ResourceExists: false,
 		}, nil
 	}
+
+	fmt.Printf("Observed listener from API: %+v\n", listener)
+	cr.Status.AtProvider = GenerateListenerObservation(listener)
 
 	// Now the resource is in sync and ready to use, so mark it as available.
 	cr.Status.SetConditions(xpv1.Available())
@@ -241,7 +243,8 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 	}
 	cr.Status.SetConditions(xpv1.Creating())
 
-	fmt.Printf("Creating: %+v", cr)
+	// fmt.Printf("Creating: %+v", cr)
+	c.zonehero_api_client.SetDebug(true)
 
 	// Build create request
 	input := GenerateCreateInput(&cr.Spec.ForProvider)
@@ -272,7 +275,8 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 		return managed.ExternalUpdate{}, errors.New(errNotListener)
 	}
 
-	fmt.Printf("Updating: %+v", cr)
+	// fmt.Printf("Updating: %+v", cr)
+	c.zonehero_api_client.SetDebug(true)
 
 	input := GenerateUpdateInput(&cr.Spec.ForProvider)
 
@@ -318,10 +322,9 @@ func (c *external) Disconnect(ctx context.Context) error {
 
 // -#---- HELPER FUNCTIONS ---- #-
 func GenerateListenerObservation(listener *hlb.Listener) v1alpha1.ListenerObservation {
-	overprovisioningFactor := kresource.NewQuantity(int64(listener.OverprovisioningFactor*100), kresource.DecimalSI)
 	obs := v1alpha1.ListenerObservation{
 		ID:                     listener.ID,
-		OverprovisioningFactor: overprovisioningFactor,
+		OverprovisioningFactor: &listener.OverprovisioningFactor,
 	}
 	if !listener.CreatedAt.IsZero() {
 		obs.CreatedAt = &metav1.Time{Time: listener.CreatedAt}
@@ -337,7 +340,7 @@ func GenerateCreateInput(p *v1alpha1.ListenerParameters) *hlb.ListenerCreate {
 		ALPNPolicy:               p.ALPNPolicy,
 		CertificateSecretsName:   p.CertificateSecretsName,
 		EnableDeletionProtection: p.EnableDeletionProtection,
-		OverprovisioningFactor:   float64(p.OverprovisioningFactor.Value()) / 100.0,
+		OverprovisioningFactor:   p.OverprovisioningFactor,
 		Port:                     p.Port,
 		Protocol:                 p.Protocol,
 		TargetGroupARN:           p.TargetGroupARN,
@@ -349,12 +352,11 @@ func GenerateCreateInput(p *v1alpha1.ListenerParameters) *hlb.ListenerCreate {
 // hlb.LoadBalancerCreate struct is populated. This is the perfect place to implement your defaulting logic.
 // this helper gunction is required because of Golang strict type-checking
 func GenerateUpdateInput(p *v1alpha1.ListenerParameters) *hlb.ListenerUpdate {
-	overprovisioningFactor := float64(p.OverprovisioningFactor.Value()) / 100.0
 	return &hlb.ListenerUpdate{
 		ALPNPolicy:               &p.ALPNPolicy,
 		CertificateSecretsName:   &p.CertificateSecretsName,
 		EnableDeletionProtection: &p.EnableDeletionProtection,
-		OverprovisioningFactor:   &overprovisioningFactor,
+		OverprovisioningFactor:   &p.OverprovisioningFactor,
 		Port:                     &p.Port,
 		Protocol:                 &p.Protocol,
 		TargetGroupARN:           &p.TargetGroupARN,
@@ -377,7 +379,7 @@ func IsUpToDate(p *v1alpha1.ListenerParameters, listener *hlb.Listener) bool {
 		return false
 	}
 
-	if (float64(p.OverprovisioningFactor.Value()) / 100.0) != listener.OverprovisioningFactor {
+	if p.OverprovisioningFactor != listener.OverprovisioningFactor {
 		return false
 	}
 

@@ -19,7 +19,6 @@ package v1alpha1
 import (
 	"reflect"
 
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
@@ -40,8 +39,9 @@ type ListenerParameters struct {
 	// +optional
 	ID                       string    `json:"id"`
 	LoadBalancerID           string    `json:"loadBalancerId"`
-	// +kubebuilder:default="1.1"
-	OverprovisioningFactor   resource.Quantity `json:"overprovisioningFactor"`
+	// +kubebuilder:default=1.1
+	// +optional
+	OverprovisioningFactor   float64   `json:"overprovisioningFactor"`
 	Port                     int       `json:"port"`
 	Protocol                 string    `json:"protocol"`
 	TargetGroupARN           string    `json:"targetGroupArn"`
@@ -61,7 +61,7 @@ type ListenerObservation struct {
 	ID                       	string    `json:"id"`
 
 	// Overprovisioning factor for the listener.
-	OverprovisioningFactor   	*resource.Quantity `json:"overprovisioningFactor"`
+	OverprovisioningFactor   	*float64 `json:"overprovisioningFactor"`
 
 	// CreatedAt is when the listener was created.
 	CreatedAt 					*metav1.Time `json:"createdAt,omitempty"`
@@ -74,7 +74,7 @@ type ListenerUpdate struct {
 	ALPNPolicy               *string  `json:"alpnPolicy,omitempty"`
 	CertificateSecretsName   *string  `json:"certificateSecretsName,omitempty"`
 	EnableDeletionProtection *bool    `json:"enableDeletionProtection"`
-	OverprovisioningFactor   *resource.Quantity `json:"overprovisioningFactor"`
+	OverprovisioningFactor   *float64 `json:"overprovisioningFactor"`
 	Port                     *int     `json:"port,omitempty"`
 	Protocol                 *string  `json:"protocol,omitempty"`
 	TargetGroupARN           *string  `json:"targetGroupArn,omitempty"`
