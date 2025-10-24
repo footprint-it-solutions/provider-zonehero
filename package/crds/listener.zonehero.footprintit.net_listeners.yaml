@@ -297,7 +297,6 @@ spec:
                     type: string
                 required:
                 - id
-                - overprovisioningFactor
                 type: object
               conditions:
                 description: Conditions of the resource.

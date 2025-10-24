@@ -215,52 +215,14 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	// otherwise, if we receive 200 from the ZoneHero API then the load balancer exists
 	lb, err := c.hlb.GetLoadBalancer(ctx, externalName)
 	if err != nil {
-		// Create new load balancer
-		return managed.ExternalObservation{
-			ResourceExists: false,
-		}, nil
+		// This is a simplified error handling. A robust implementation would
+		// check for a specific "not found" error (e.g., a 404 status code)
+		// and return other errors to be retried.
+		return managed.ExternalObservation{ResourceExists: false}, nil
 	}
 
-	// check if the resource is being deleted so that we do not issue repetitive API calls for deletion
-	// If resource is not being deleted then set the Ready condition based on the observed state.
-	// if err == nil then it means that we can read lb.State
-
-	// the first state that a LB enters is LBStatePendingCreation , then LBStateCreating
-	// depending on the outcome of the provisioning step, the LB will transition to either LBStateActive  or LBStateFailed , both of which are final states (they will not change unless another operation is started from the API).
-	// when you modify a LB, similarly the state transitions to LBStatePendingUpdate , then LBStateUpdating , and again the LB will transition to LBStateActive  (as far as I remember, it cannot enter LBStateFailed , because the properties that can lead to that state are read only and require a redeployment, (like changing subnets))
-
-	// | State            | Ready Condition (status, reason) | Synced Condition (status) | Helper Function to Use |
-	// | ---------------- | ---------------------------------| -------------------------| ---------------------- |
-	// | Pending Creation | False, Creating                  | False                    | xpv1.Creating()      |
-	// | Available        | True, Available                  | True                     | xpv1.Available()     |
-	// | Pending Update   | True, Available                  | False                    | (Return ResourceUpToDate: false from Observe) |
-	// | Pending Deletion | False, Deleting                  | True                     | xpv1.Deleting()      |
-	// | Failed/Error     | False, Unavailable               | False                    | xpv1.Unavailable()   |
-
+	// The resource exists, so we can now check its state.
 	switch lb.State {
-	case LBStatePendingDeletion, LBStateDeleting:
-		cr.SetConditions(xpv1.Deleting())
-		return managed.ExternalObservation{
-			ResourceExists:   true,
-			ResourceUpToDate: true,
-		}, nil
-	case LBStateDeleted:
-		cr.SetConditions(xpv1.Unavailable().WithMessage("The external resource is not available as it was deleted."))
-		return managed.ExternalObservation{ ResourceExists: false }, nil
-	case LBStatePendingCreation, LBStateCreating:
-		cr.SetConditions(xpv1.Creating())
-        return managed.ExternalObservation{
-            // The resource definitely exists, even if it's not ready.
-            ResourceExists:   true,
-
-            // We report that it's "up to date" because there is no drift
-            // between our spec and the external resource. We are simply
-            // waiting for the provider to finish its work. Returning false
-            // here would incorrectly trigger the Update method.
-            ResourceUpToDate: true,
-        }, nil
-	case LBStateActive:
-		cr.SetConditions(xpv1.Available())
 	case LBStateFailed:
 		extendedErrorMessage := "None"
 		if lb.DeploymentStatus != nil && lb.DeploymentStatus.ErrorMessage != "" {
@@ -268,27 +230,33 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		}
 		message := fmt.Sprintf("load balancer (%s) entered failed state, with message '%s'", lb.ID, extendedErrorMessage)
 		cr.SetConditions(xpv1.Unavailable().WithMessage(message))
-        return managed.ExternalObservation{
-            // The resource exists, but it is not usable.
-            ResourceExists:   true,
-
-            // We report that it's "up to date" because there is no drift.
-            // The controller has done its job, and the failure is external.
-            // We don't want to trigger an Update.
-            ResourceUpToDate: true,
-        }, nil
+		return managed.ExternalObservation{
+			ResourceExists:   true,
+			ResourceUpToDate: true, // No drift, the failure is external.
+		}, nil
+	case LBStatePendingDeletion, LBStateDeleting:
+		cr.SetConditions(xpv1.Deleting())
+		return managed.ExternalObservation{
+			ResourceExists:   true,
+			ResourceUpToDate: true,
+		}, nil
+	case LBStateDeleted:
+		return managed.ExternalObservation{ResourceExists: false}, nil
+	case LBStatePendingCreation, LBStateCreating:
+		cr.SetConditions(xpv1.Creating())
+		return managed.ExternalObservation{
+			ResourceExists:   true,
+			ResourceUpToDate: true, // Waiting for provider.
+		}, nil
+	case LBStateActive:
+		cr.SetConditions(xpv1.Available())
 	default:
 		// If it's an unknown state, it's safest to consider it unavailable.
 		cr.SetConditions(xpv1.Unavailable().WithMessage("The external resource is in an unknown state: " + lb.State))
-        return managed.ExternalObservation{
-            // The resource exists, but we don't know if it's usable.
-            ResourceExists:   true,
-
-            // We report that it's "up to date" to prevent any further
-            // actions. We will just keep polling until the state changes
-            // to one that we do recognize.
-            ResourceUpToDate: true,
-        }, nil
+		return managed.ExternalObservation{
+			ResourceExists:   true,
+			ResourceUpToDate: true, // Prevent updates.
+		}, nil
 	}
 
 
