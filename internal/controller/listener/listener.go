@@ -188,15 +188,17 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	// If the managed resource is marked for deletion then deleted it.
 	// Because there is no external resource to observe, we return false for
 	// ResourceExists.
+	c.zonehero_api_client.SetDebug(true)
+
 	cr, ok := mg.(*v1alpha1.Listener)
 	if !ok {
 		return managed.ExternalObservation{}, errors.New(errNotListener)
 	}
-	if meta.WasDeleted(mg) {
-		return managed.ExternalObservation{
-			ResourceExists: false,
-		}, nil
-	}
+	// if meta.WasDeleted(mg) {
+	// 	return managed.ExternalObservation{
+	// 		ResourceExists: false,
+	// 	}, nil
+	// }
 
 	// // These fmt statements should be removed in the real implementation.
 	// fmt.Printf("Observing: %+v", cr)
@@ -214,6 +216,10 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		return managed.ExternalObservation{
 			ResourceExists: false,
 		}, nil
+	}
+
+	if meta.WasDeleted(mg){
+		cr.SetConditions(xpv1.Deleting())
 	}
 
 	fmt.Printf("Observed listener from API: %+v\n", listener)
@@ -352,15 +358,21 @@ func GenerateCreateInput(p *v1alpha1.ListenerParameters) *hlb.ListenerCreate {
 // hlb.LoadBalancerCreate struct is populated. This is the perfect place to implement your defaulting logic.
 // this helper gunction is required because of Golang strict type-checking
 func GenerateUpdateInput(p *v1alpha1.ListenerParameters) *hlb.ListenerUpdate {
-	return &hlb.ListenerUpdate{
+	update := &hlb.ListenerUpdate{
 		ALPNPolicy:               &p.ALPNPolicy,
-		CertificateSecretsName:   &p.CertificateSecretsName,
 		EnableDeletionProtection: &p.EnableDeletionProtection,
 		OverprovisioningFactor:   &p.OverprovisioningFactor,
 		Port:                     &p.Port,
 		Protocol:                 &p.Protocol,
 		TargetGroupARN:           &p.TargetGroupARN,
 	}
+
+
+	if p.CertificateSecretsName != "" {
+		update.CertificateSecretsName = &p.CertificateSecretsName
+	}
+
+	return update
 }
 
 // IsUpToDate checks ONLY the configurable fields.

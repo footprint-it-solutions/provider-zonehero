@@ -28,6 +28,7 @@ import (
 
 // ListenerParameters are the configurable fields of a Listener.
 type ListenerParameters struct {
+	// +kubebuilder:default=HTTP2Preferred
 	// +optional
 	ALPNPolicy               string    `json:"alpnPolicy,omitempty"`
 	// +optional
@@ -71,12 +72,17 @@ type ListenerObservation struct {
 }
 
 type ListenerUpdate struct {
+	// +optional
 	ALPNPolicy               *string  `json:"alpnPolicy,omitempty"`
+	// +optional
 	CertificateSecretsName   *string  `json:"certificateSecretsName,omitempty"`
 	EnableDeletionProtection *bool    `json:"enableDeletionProtection"`
 	OverprovisioningFactor   *float64 `json:"overprovisioningFactor"`
+	// +optional
 	Port                     *int     `json:"port,omitempty"`
+	// +optional
 	Protocol                 *string  `json:"protocol,omitempty"`
+	// +optional
 	TargetGroupARN           *string  `json:"targetGroupArn,omitempty"`
 }
 

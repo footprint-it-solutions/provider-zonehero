@@ -74,6 +74,7 @@ spec:
                 description: ListenerParameters are the configurable fields of a Listener.
                 properties:
                   alpnPolicy:
+                    default: HTTP2Preferred
                     type: string
                   certificateSecretsName:
                     type: string
