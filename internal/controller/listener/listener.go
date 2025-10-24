@@ -185,25 +185,14 @@ type external struct {
 }
 
 func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	// If the managed resource is marked for deletion then deleted it.
-	// Because there is no external resource to observe, we return false for
-	// ResourceExists.
 	c.zonehero_api_client.SetDebug(true)
 
 	cr, ok := mg.(*v1alpha1.Listener)
 	if !ok {
 		return managed.ExternalObservation{}, errors.New(errNotListener)
 	}
-	// if meta.WasDeleted(mg) {
-	// 	return managed.ExternalObservation{
-	// 		ResourceExists: false,
-	// 	}, nil
-	// }
 
-	// // These fmt statements should be removed in the real implementation.
-	// fmt.Printf("Observing: %+v", cr)
-
-	// Step 1: Check if the resource has been created yet.
+	// Check if the resource has been created yet.
 	// If the external-name annotation is not set, it means Create has not been called.
 	externalName := meta.GetExternalName(cr)
 
@@ -227,7 +216,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 
 	// Now the resource is in sync and ready to use, so mark it as available.
 	cr.Status.SetConditions(xpv1.Available())
-	// Step 4: Call IsUpToDate to check for drift and return the final observation.
+	// Call IsUpToDate to check for drift and return the final observation.
 	return managed.ExternalObservation{
 		// The resource definitely exists at this point.
 		ResourceExists: true,
@@ -249,7 +238,6 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 	}
 	cr.Status.SetConditions(xpv1.Creating())
 
-	// fmt.Printf("Creating: %+v", cr)
 	c.zonehero_api_client.SetDebug(true)
 
 	// Build create request
@@ -269,9 +257,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 	if !listener.CreatedAt.IsZero() {
 		cr.Status.AtProvider.CreatedAt = &metav1.Time{Time: listener.CreatedAt}
 	}
-	// if listener.CreatedAt.Unix() > 0 {
-	// 	cr.Status.AtProvider.CreatedAt = &metav1.Time{Time: listener.CreatedAt}
-	// }
+
 	return managed.ExternalCreation{}, nil
 }
 
@@ -281,7 +267,6 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 		return managed.ExternalUpdate{}, errors.New(errNotListener)
 	}
 
-	// fmt.Printf("Updating: %+v", cr)
 	c.zonehero_api_client.SetDebug(true)
 
 	input := GenerateUpdateInput(&cr.Spec.ForProvider)

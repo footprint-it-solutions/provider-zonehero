@@ -195,7 +195,7 @@ func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.E
 // external resource to ensure it reflects the managed resource's desired state.
 type external struct {
 	// A 'client' used to connect to the external resource API. In practice this
-	// would be something like an AWS SDK client.
+	// would be something like an AWS SDK client. In our case this is Client from the ZoneHero HLB library
 	hlb *hlb.Client
 }
 
@@ -306,7 +306,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	}
 
 
-	// Step 4: Call IsUpToDate to check for drift and return the final observation.
+	// Step 3: Call IsUpToDate to check for drift and return the final observation.
 	return managed.ExternalObservation{
 		// The resource definitely exists at this point.
 		ResourceExists:   true,
