@@ -20,6 +20,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
+	"regexp"
 
 	"github.com/crossplane/crossplane-runtime/pkg/feature"
 
@@ -215,10 +217,19 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	// otherwise, if we receive 200 from the ZoneHero API then the load balancer exists
 	lb, err := c.hlb.GetLoadBalancer(ctx, externalName)
 	if err != nil {
-		// This is a simplified error handling. A robust implementation would
-		// check for a specific "not found" error (e.g., a 404 status code)
-		// and return other errors to be retried.
-		return managed.ExternalObservation{ResourceExists: false}, nil
+		fmt.Printf("Error getting load balancer: %+v\n", err)
+
+		// Check for a specific 404 Not Found error. If we find it, we
+		// know the resource needs to be created.
+		if strings.Contains(err.Error(), "status code: 404") {
+			return managed.ExternalObservation{ResourceExists: false}, nil
+		}
+
+		// For any other error (e.g., network issues, 500 errors, or an
+		// error from a 'Failed' resource), we return the error. This
+		// tells the controller to retry the operation after a backoff
+		// period, which is the safe and correct behavior.
+		return managed.ExternalObservation{}, errors.Wrap(err, "failed to get hosted load balancer")
 	}
 
 	// The resource exists, so we can now check its state.
@@ -304,6 +315,29 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	lb, err := c.hlb.CreateLoadBalancer(ctx, input)
 	if err != nil {
+		// Step 1: Check for the specific "entered failed state" error.
+		if strings.Contains(err.Error(), "entered failed state") {
+			// Step 2: Parse the load balancer ID from the error string.
+			// We use a regular expression to find the ID within the parentheses.
+			re := regexp.MustCompile(`\((\S+)\)`)
+			matches := re.FindStringSubmatch(err.Error())
+
+			// The first submatch (index 1) is our captured group (the ID).
+			if len(matches) > 1 {
+				lbID := matches[1]
+				// Step 3: Set the external-name and update the resource status.
+				// This is critical to break the creation loop.
+				meta.SetExternalName(cr, lbID)
+				cr.SetConditions(xpv1.Unavailable().WithMessage(err.Error()))
+			}
+
+			// Step 4: Return a nil error to stop the creation loop.
+			// We are telling the controller that the creation "succeeded" in that
+			// an external resource now exists, and the next Observe call will
+			// handle its failed state.
+			return managed.ExternalCreation{}, nil
+		}
+
 		return managed.ExternalCreation{}, errors.Wrap(err, errCreateLB)
 	}
 
