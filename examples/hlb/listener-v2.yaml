@@ -1,10 +1,10 @@
 apiVersion: listener.zonehero.footprintit.net/v1alpha1
 kind: Listener
 metadata:
-  name: footprint-hlb-test-listener
+  name: footprint-hlb-test-listener-v2
 spec:
   forProvider:
-    loadBalancerId: "lb-90a9b54ec48ab012"
+    loadBalancerId: "lb-9256c784a1ae864e"
     port: 80
     protocol: "HTTP"
     targetGroupArn: "arn:aws:elasticloadbalancing:eu-west-1:203918840229:targetgroup/hlb-test-tg/835f57bf8351d3e0" # target group linked to the hlb-test-alb 

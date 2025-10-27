@@ -407,16 +407,34 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	c.hlb.SetDebug(true)
 
-	// Set the "Deleting" condition.
-    // This sets the Ready condition to False with a reason of "Deleting".
-    cr.SetConditions(xpv1.Deleting())
+	// // Set the "Deleting" condition.
+    // // This sets the Ready condition to False with a reason of "Deleting".
+    // cr.SetConditions(xpv1.Deleting())
 
 	id := meta.GetExternalName(cr)
 	err := c.hlb.DeleteLoadBalancer(ctx, id)
 	if err != nil {
+		// The ZoneHero API will not allow to delete a load balancer that has listeners attached to it
+		// The API will return 409
+		// At this stage we need to handle the error and abort the deletion process
+		if strings.Contains(err.Error(), "status code: 409") {
+			// we do NOT update the status condition.
+			// We simply return the error to trigger a retry. The resource
+			// will remain in its last known state (e.g., Available)
+			// until the conflict is resolved.
+			return managed.ExternalDelete{}, errors.Wrap(err, "cannot delete a load balancer that has listeners attached")
+		}
+
+		// For all other types of errors, we set the condition to Deleting
+		// before returning the error to signal that there is a problem with deletion.
+		cr.SetConditions(xpv1.Deleting())
 		return managed.ExternalDelete{}, errors.Wrap(err, errDeleteLB)
 	}
 
+	// If err is nil, the deletion was successful.
+	// We set the Deleting condition here as a final status update
+	// before the resource is removed from the API server.
+	cr.SetConditions(xpv1.Deleting())
 	return managed.ExternalDelete{}, nil
 }
 
