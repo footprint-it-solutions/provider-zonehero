@@ -30,26 +30,34 @@ import (
 type ListenerParameters struct {
 	// +kubebuilder:default=HTTP2Preferred
 	// +optional
-	ALPNPolicy               string    `json:"alpnPolicy,omitempty"`
+	ALPNPolicy string `json:"alpnPolicy,omitempty"`
 	// +optional
-	CertificateSecretsName   string    `json:"certificateSecretsName,omitempty"`
+	CertificateSecretsName string `json:"certificateSecretsName,omitempty"`
 	// +optional
-	CreatedAt                metav1.Time `json:"createdAt"`
+	CreatedAt metav1.Time `json:"createdAt"`
 	// +kubebuilder:default=false
-	EnableDeletionProtection bool      `json:"enableDeletionProtection"`
+	EnableDeletionProtection bool `json:"enableDeletionProtection"`
 	// +optional
-	ID                       string    `json:"id"`
-	LoadBalancerID           string    `json:"loadBalancerId"`
+	ID string `json:"id"`
+
+	// LoadBalancerRef is a reference to a HostedLoadBalancer resource.
+	// +optional
+	LoadBalancerRef *xpv1.Reference `json:"loadBalancerRef,omitempty"`
+
+	// LoadBalancerSelector selects a reference to a HostedLoadBalancer resource.
+	// +optional
+	LoadBalancerSelector *xpv1.Selector `json:"loadBalancerSelector,omitempty"`
+
 	// +kubebuilder:default=1.1
 	// +optional
-	OverprovisioningFactor   float64   `json:"overprovisioningFactor"`
-	Port                     int       `json:"port"`
-	Protocol                 string    `json:"protocol"`
-	TargetGroupARN           string    `json:"targetGroupArn"`
+	OverprovisioningFactor float64 `json:"overprovisioningFactor"`
+	Port                   int     `json:"port"`
+	Protocol               string  `json:"protocol"`
+	TargetGroupARN         string  `json:"targetGroupArn"`
 	// +optional
-	UpdatedAt                metav1.Time `json:"updatedAt"`
+	UpdatedAt metav1.Time `json:"updatedAt"`
 	// +optional
-	URI                      string    `json:"uri"`
+	URI string `json:"uri"`
 }
 
 
@@ -73,17 +81,17 @@ type ListenerObservation struct {
 
 type ListenerUpdate struct {
 	// +optional
-	ALPNPolicy               *string  `json:"alpnPolicy,omitempty"`
+	ALPNPolicy *string `json:"alpnPolicy,omitempty"`
 	// +optional
-	CertificateSecretsName   *string  `json:"certificateSecretsName,omitempty"`
+	CertificateSecretsName *string `json:"certificateSecretsName,omitempty"`
 	EnableDeletionProtection *bool    `json:"enableDeletionProtection"`
 	OverprovisioningFactor   *float64 `json:"overprovisioningFactor"`
 	// +optional
-	Port                     *int     `json:"port,omitempty"`
+	Port *int `json:"port,omitempty"`
 	// +optional
-	Protocol                 *string  `json:"protocol,omitempty"`
+	Protocol *string `json:"protocol,omitempty"`
 	// +optional
-	TargetGroupARN           *string  `json:"targetGroupArn,omitempty"`
+	TargetGroupARN *string `json:"targetGroupArn,omitempty"`
 }
 
 // A ListenerSpec defines the desired state of a Listener.

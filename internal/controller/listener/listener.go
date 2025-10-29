@@ -38,6 +38,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	hlbv1alpha1 "github.com/footprint-it-solutions/provider-zonehero/apis/hostedloadbalancer/v1alpha1"
 	"github.com/footprint-it-solutions/provider-zonehero/apis/listener/v1alpha1"
 	apisv1beta1 "github.com/footprint-it-solutions/provider-zonehero/apis/v1beta1"
 
@@ -173,7 +174,7 @@ func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.E
 		return nil, errors.Wrap(err, errNewClient)
 	}
 
-	return &external{zonehero_api_client: svc}, nil
+	return &external{kube: c.kube, zonehero_api_client: svc}, nil
 }
 
 // An ExternalClient observes, then either creates, updates, or deletes an
@@ -181,6 +182,7 @@ func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.E
 type external struct {
 	// A 'client' used to connect to the external resource API. In practice this
 	// would be something like an AWS SDK client.
+	kube                client.Client
 	zonehero_api_client *hlb.Client
 }
 
@@ -192,13 +194,33 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		return managed.ExternalObservation{}, errors.New(errNotListener)
 	}
 
+	if cr.Spec.ForProvider.LoadBalancerRef == nil {
+		return managed.ExternalObservation{}, errors.New("loadBalancerRef is required")
+	}
+
+	// Resolve the reference to get the HostedLoadBalancer
+	hlb := &hlbv1alpha1.HostedLoadBalancer{}
+	if err := c.kube.Get(ctx, types.NamespacedName{Name: cr.Spec.ForProvider.LoadBalancerRef.Name}, hlb); err != nil {
+		return managed.ExternalObservation{}, errors.Wrap(err, "failed to get HostedLoadBalancer")
+	}
+
+	// Check if the referenced resource is ready
+	if !resource.IsConditionTrue(hlb.GetCondition(xpv1.TypeReady)) {
+		return managed.ExternalObservation{}, errors.New("referenced HostedLoadBalancer is not yet ready")
+	}
+
+	// Get the ID from the status of the referenced resource
+	loadBalancerID := hlb.Status.AtProvider.ID
+	if loadBalancerID == "" {
+		return managed.ExternalObservation{}, errors.New("referenced HostedLoadBalancer does not have an external ID yet")
+	}
+
 	// Check if the resource has been created yet.
 	// If the external-name annotation is not set, it means Create has not been called.
 	externalName := meta.GetExternalName(cr)
 
 	// use the externalName in a call to the ZoneHero API, on first run this will give us 404 and we can trigger create method
 	// otherwise, if we receive 200 from the ZoneHero API then the listener exists
-	loadBalancerID := cr.Spec.ForProvider.LoadBalancerID
 	listener, err := c.zonehero_api_client.GetListener(ctx, loadBalancerID, externalName)
 	if err != nil {
 		// Create new listener
@@ -240,9 +262,30 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	c.zonehero_api_client.SetDebug(true)
 
+	if cr.Spec.ForProvider.LoadBalancerRef == nil {
+		return managed.ExternalCreation{}, errors.New("loadBalancerRef is required")
+	}
+
+	// Resolve the reference to get the HostedLoadBalancer
+	hlb := &hlbv1alpha1.HostedLoadBalancer{}
+	if err := c.kube.Get(ctx, types.NamespacedName{Name: cr.Spec.ForProvider.LoadBalancerRef.Name}, hlb); err != nil {
+		return managed.ExternalCreation{}, errors.Wrap(err, "failed to get HostedLoadBalancer")
+	}
+
+	// Set the owner reference to enable cascading deletes.
+	ref := metav1.NewControllerRef(hlb, hlbv1alpha1.HostedLoadBalancerGroupVersionKind)
+	ref.BlockOwnerDeletion = &[]bool{true}[0]
+	ref.Controller = &[]bool{true}[0]
+	cr.SetOwnerReferences([]metav1.OwnerReference{*ref})
+
+	// Get the ID from the status of the referenced resource
+	loadBalancerID := hlb.Status.AtProvider.ID
+	if loadBalancerID == "" {
+		return managed.ExternalCreation{}, errors.New("referenced HostedLoadBalancer does not have an external ID yet")
+	}
+
 	// Build create request
 	input := GenerateCreateInput(&cr.Spec.ForProvider)
-	loadBalancerID := cr.Spec.ForProvider.LoadBalancerID
 
 	listener, err := c.zonehero_api_client.CreateListener(ctx, loadBalancerID, input)
 	if err != nil {
@@ -269,10 +312,31 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	c.zonehero_api_client.SetDebug(true)
 
+	if cr.Spec.ForProvider.LoadBalancerRef == nil {
+		return managed.ExternalUpdate{}, errors.New("loadBalancerRef is required")
+	}
+
+	// Resolve the reference to get the HostedLoadBalancer
+	hlb := &hlbv1alpha1.HostedLoadBalancer{}
+	if err := c.kube.Get(ctx, types.NamespacedName{Name: cr.Spec.ForProvider.LoadBalancerRef.Name}, hlb); err != nil {
+		return managed.ExternalUpdate{}, errors.Wrap(err, "failed to get HostedLoadBalancer")
+	}
+
+	// Ensure the owner reference is set.
+	ref := metav1.NewControllerRef(hlb, hlbv1alpha1.HostedLoadBalancerGroupVersionKind)
+	ref.BlockOwnerDeletion = &[]bool{true}[0]
+	ref.Controller = &[]bool{true}[0]
+	cr.SetOwnerReferences([]metav1.OwnerReference{*ref})
+
+	// Get the ID from the status of the referenced resource
+	loadBalancerID := hlb.Status.AtProvider.ID
+	if loadBalancerID == "" {
+		return managed.ExternalUpdate{}, errors.New("referenced HostedLoadBalancer does not have an external ID yet")
+	}
+
 	input := GenerateUpdateInput(&cr.Spec.ForProvider)
 
 	listenerID := meta.GetExternalName(cr)
-	loadBalancerID := cr.Spec.ForProvider.LoadBalancerID
 	_, err := c.zonehero_api_client.UpdateListener(ctx, loadBalancerID, listenerID, input)
 	if err != nil {
 		return managed.ExternalUpdate{}, errors.Wrap(err, errUpdateListener)
@@ -297,8 +361,23 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 	// This sets the Ready condition to False with a reason of "Deleting".
 	cr.SetConditions(xpv1.Deleting())
 
+	if cr.Spec.ForProvider.LoadBalancerRef == nil {
+		return managed.ExternalDelete{}, errors.New("loadBalancerRef is required")
+	}
+
+	// Resolve the reference to get the HostedLoadBalancer
+	hlb := &hlbv1alpha1.HostedLoadBalancer{}
+	if err := c.kube.Get(ctx, types.NamespacedName{Name: cr.Spec.ForProvider.LoadBalancerRef.Name}, hlb); err != nil {
+		return managed.ExternalDelete{}, errors.Wrap(err, "failed to get HostedLoadBalancer")
+	}
+
+	// Get the ID from the status of the referenced resource
+	loadBalancerID := hlb.Status.AtProvider.ID
+	if loadBalancerID == "" {
+		return managed.ExternalDelete{}, errors.New("referenced HostedLoadBalancer does not have an external ID yet")
+	}
+
 	listenerID := meta.GetExternalName(cr)
-	loadBalancerID := cr.Spec.ForProvider.LoadBalancerID
 	err := c.zonehero_api_client.DeleteListener(ctx, loadBalancerID, listenerID)
 	if err != nil {
 		return managed.ExternalDelete{}, errors.Wrap(err, errDeleteListener)

@@ -9,6 +9,7 @@
 package v1alpha1
 
 import (
+	"github.com/crossplane/crossplane-runtime/apis/common/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -103,6 +104,16 @@ func (in *ListenerObservation) DeepCopy() *ListenerObservation {
 func (in *ListenerParameters) DeepCopyInto(out *ListenerParameters) {
 	*out = *in
 	in.CreatedAt.DeepCopyInto(&out.CreatedAt)
+	if in.LoadBalancerRef != nil {
+		in, out := &in.LoadBalancerRef, &out.LoadBalancerRef
+		*out = new(v1.Reference)
+		(*in).DeepCopyInto(*out)
+	}
+	if in.LoadBalancerSelector != nil {
+		in, out := &in.LoadBalancerSelector, &out.LoadBalancerSelector
+		*out = new(v1.Selector)
+		(*in).DeepCopyInto(*out)
+	}
 	in.UpdatedAt.DeepCopyInto(&out.UpdatedAt)
 }
 
