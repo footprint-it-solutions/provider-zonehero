@@ -21,6 +21,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"net"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 
@@ -223,6 +225,11 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	// otherwise, if we receive 200 from the ZoneHero API then the listener exists
 	listener, err := c.zonehero_api_client.GetListener(ctx, loadBalancerID, externalName)
 	if err != nil {
+		var dnsErr *net.DNSError
+		if errors.As(err, &dnsErr) {
+			customErr := fmt.Errorf("failed to connect due to DNS issue: ZoneHero is not available in %s: %s", dnsErr.Name, dnsErr.Err)
+			return managed.ExternalObservation{}, customErr
+		}
 		// Create new listener
 		return managed.ExternalObservation{
 			ResourceExists: false,
@@ -289,6 +296,11 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	listener, err := c.zonehero_api_client.CreateListener(ctx, loadBalancerID, input)
 	if err != nil {
+		var dnsErr *net.DNSError
+		if errors.As(err, &dnsErr) {
+			customErr := fmt.Errorf("failed to connect due to DNS issue: ZoneHero is not available in %s: %s", dnsErr.Name, dnsErr.Err)
+			return managed.ExternalCreation{}, customErr
+		}
 		return managed.ExternalCreation{}, errors.Wrap(err, errCreateListener)
 	}
 
@@ -339,6 +351,11 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 	listenerID := meta.GetExternalName(cr)
 	_, err := c.zonehero_api_client.UpdateListener(ctx, loadBalancerID, listenerID, input)
 	if err != nil {
+		var dnsErr *net.DNSError
+		if errors.As(err, &dnsErr) {
+			customErr := fmt.Errorf("failed to connect due to DNS issue: ZoneHero is not available in %s: %s", dnsErr.Name, dnsErr.Err)
+			return managed.ExternalUpdate{}, customErr
+		}
 		return managed.ExternalUpdate{}, errors.Wrap(err, errUpdateListener)
 	}
 
@@ -380,6 +397,11 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 	listenerID := meta.GetExternalName(cr)
 	err := c.zonehero_api_client.DeleteListener(ctx, loadBalancerID, listenerID)
 	if err != nil {
+		var dnsErr *net.DNSError
+		if errors.As(err, &dnsErr) {
+			customErr := fmt.Errorf("failed to connect due to DNS issue: ZoneHero is not available in %s: %s", dnsErr.Name, dnsErr.Err)
+			return managed.ExternalDelete{}, customErr
+		}
 		return managed.ExternalDelete{}, errors.Wrap(err, errDeleteListener)
 	}
 

@@ -51,6 +51,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 
 	 "github.com/google/go-cmp/cmp"
+
+	 "net"
 )
 
 const (
@@ -225,6 +227,15 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 			return managed.ExternalObservation{ResourceExists: false}, nil
 		}
 
+		// Next, check if the error is a transient DNS error.
+		var dnsErr *net.DNSError
+		if errors.As(err, &dnsErr) {
+			// This is a network issue. We create a more user-friendly error
+			// message and return it to trigger a retry.
+			customErr := fmt.Errorf("failed to connect due to DNS issue: ZoneHero is not available in %s: %s", dnsErr.Name, dnsErr.Err)
+			return managed.ExternalObservation{}, customErr
+		}
+
 		// For any other error (e.g., network issues, 500 errors, or an
 		// error from a 'Failed' resource), we return the error. This
 		// tells the controller to retry the operation after a backoff
@@ -315,6 +326,12 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	lb, err := c.hlb.CreateLoadBalancer(ctx, input)
 	if err != nil {
+		var dnsErr *net.DNSError
+		if errors.As(err, &dnsErr) {
+			customErr := fmt.Errorf("failed to connect due to DNS issue: ZoneHero is not available in %s: %s", dnsErr.Name, dnsErr.Err)
+			return managed.ExternalCreation{}, customErr
+		}
+
 		// Step 1: Check for the specific "entered failed state" error.
 		if strings.Contains(err.Error(), "entered failed state") {
 			// Step 2: Parse the load balancer ID from the error string.
@@ -389,6 +406,12 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 	id := meta.GetExternalName(cr)
 	_, err := c.hlb.UpdateLoadBalancer(ctx, id, input)
 	if err != nil {
+		var dnsErr *net.DNSError
+		if errors.As(err, &dnsErr) {
+			customErr := fmt.Errorf("failed to connect due to DNS issue: ZoneHero is not available in %s: %s", dnsErr.Name, dnsErr.Err)
+			return managed.ExternalUpdate{}, customErr
+		}
+
 		return managed.ExternalUpdate{}, errors.Wrap(err, errUpdateLB)
 	}
 
@@ -414,6 +437,12 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 	id := meta.GetExternalName(cr)
 	err := c.hlb.DeleteLoadBalancer(ctx, id)
 	if err != nil {
+		var dnsErr *net.DNSError
+		if errors.As(err, &dnsErr) {
+			customErr := fmt.Errorf("failed to connect due to DNS issue: ZoneHero is not available in %s: %s", dnsErr.Name, dnsErr.Err)
+			return managed.ExternalDelete{}, customErr
+		}
+
 		// The ZoneHero API will not allow to delete a load balancer that has listeners attached to it
 		// The API will return 409
 		// At this stage we need to handle the error and abort the deletion process
