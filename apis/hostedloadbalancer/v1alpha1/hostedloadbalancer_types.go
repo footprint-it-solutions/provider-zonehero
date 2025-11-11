@@ -47,6 +47,10 @@ type HostedLoadBalancerParameters struct {
 	// +optional
 	DeploymentStatus             *DeploymentStatus `json:"deploymentStatus,omitempty"`
 	// +optional
+	AccessLogs                   *AccessLogs       `json:"accessLogs,omitempty"`
+	// +optional
+	LaunchConfig                 *LaunchConfig     `json:"launchConfig,omitempty"`
+	// +optional
 	DNSName                      string            `json:"dnsName,omitempty"`
 	// +optional
 	// +kubebuilder:default=lb-standard
@@ -102,6 +106,28 @@ type HostedLoadBalancerParameters struct {
 	ZoneID                       string            `json:"zoneId,omitempty"`
 	// +optional
 	ZoneName                     string            `json:"zoneName,omitempty"`
+}
+
+// AccessLogs defines the access log configuration for a load balancer.
+type AccessLogs struct {
+	// +optional
+	Bucket string `json:"bucket,omitempty"`
+	// +optional
+	Enabled bool `json:"enabled,omitempty"`
+	// +optional
+	Prefix string `json:"prefix,omitempty"`
+}
+
+// LaunchConfig defines the launch configuration for a load balancer.
+type LaunchConfig struct {
+	// +optional
+	InstanceType string `json:"instanceType,omitempty"`
+	// +optional
+	MinInstanceCount int `json:"minInstanceCount,omitempty"`
+	// +optional
+	MaxInstanceCount int `json:"maxInstanceCount,omitempty"`
+	// +optional
+	TargetCPUUsage int `json:"targetCpuUsage,omitempty"`
 }
 
 

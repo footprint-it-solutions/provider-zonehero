@@ -74,6 +74,17 @@ spec:
                 description: HostedLoadBalancerParameters are the configurable fields
                   of a HostedLoadBalancer.
                 properties:
+                  accessLogs:
+                    description: AccessLogs defines the access log configuration for
+                      a load balancer.
+                    properties:
+                      bucket:
+                        type: string
+                      enabled:
+                        type: boolean
+                      prefix:
+                        type: string
+                    type: object
                   accountId:
                     type: string
                   clientKeepAlive:
@@ -122,6 +133,19 @@ spec:
                   ipAddressType:
                     default: ipv4
                     type: string
+                  launchConfig:
+                    description: LaunchConfig defines the launch configuration for
+                      a load balancer.
+                    properties:
+                      instanceType:
+                        type: string
+                      maxInstanceCount:
+                        type: integer
+                      minInstanceCount:
+                        type: integer
+                      targetCpuUsage:
+                        type: integer
+                    type: object
                   name:
                     type: string
                   namePrefix:

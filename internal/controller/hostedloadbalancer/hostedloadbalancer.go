@@ -232,7 +232,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		if errors.As(err, &dnsErr) {
 			// This is a network issue. We create a more user-friendly error
 			// message and return it to trigger a retry.
-			customErr := fmt.Errorf("failed to connect due to DNS issue: ZoneHero is not available in %s: %s", dnsErr.Name, dnsErr.Err)
+			customErr := fmt.Errorf("failed to connect due to DNS issue: The ZoneHero host is not available:  %s: %s", dnsErr.Name, dnsErr.Err)
 			return managed.ExternalObservation{}, customErr
 		}
 
@@ -328,7 +328,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 	if err != nil {
 		var dnsErr *net.DNSError
 		if errors.As(err, &dnsErr) {
-			customErr := fmt.Errorf("failed to connect due to DNS issue: ZoneHero is not available in %s: %s", dnsErr.Name, dnsErr.Err)
+			customErr := fmt.Errorf("failed to connect due to DNS issue: The ZoneHero host is not available:  %s: %s", dnsErr.Name, dnsErr.Err)
 			return managed.ExternalCreation{}, customErr
 		}
 
@@ -402,13 +402,22 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 			Tags:                         &cr.Spec.ForProvider.Tags,
 		}
 
+	if cr.Spec.ForProvider.LaunchConfig != nil {
+		input.LaunchConfig = &hlb.LaunchConfig{
+			InstanceType:     cr.Spec.ForProvider.LaunchConfig.InstanceType,
+			MinInstanceCount: cr.Spec.ForProvider.LaunchConfig.MinInstanceCount,
+			MaxInstanceCount: cr.Spec.ForProvider.LaunchConfig.MaxInstanceCount,
+			TargetCPUUsage:   cr.Spec.ForProvider.LaunchConfig.TargetCPUUsage,
+		}
+	}
+
 
 	id := meta.GetExternalName(cr)
 	_, err := c.hlb.UpdateLoadBalancer(ctx, id, input)
 	if err != nil {
 		var dnsErr *net.DNSError
 		if errors.As(err, &dnsErr) {
-			customErr := fmt.Errorf("failed to connect due to DNS issue: ZoneHero is not available in %s: %s", dnsErr.Name, dnsErr.Err)
+			customErr := fmt.Errorf("failed to connect due to DNS issue: The ZoneHero host is not available:  %s: %s", dnsErr.Name, dnsErr.Err)
 			return managed.ExternalUpdate{}, customErr
 		}
 
@@ -439,7 +448,7 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 	if err != nil {
 		var dnsErr *net.DNSError
 		if errors.As(err, &dnsErr) {
-			customErr := fmt.Errorf("failed to connect due to DNS issue: ZoneHero is not available in %s: %s", dnsErr.Name, dnsErr.Err)
+			customErr := fmt.Errorf("failed to connect due to DNS issue: The ZoneHero host is not available:  %s: %s", dnsErr.Name, dnsErr.Err)
 			return managed.ExternalDelete{}, customErr
 		}
 
@@ -473,11 +482,11 @@ func (c *external) Disconnect(ctx context.Context) error {
 
 
 // this helper function translates hlb.LoadBalancerCreate type to a type compatible with v1alpha1
-// By using a translation function (GenerateCreateInput), you gain complete control over how the 
+// By using a translation function (GenerateCreateInput), you gain complete control over how the
 // hlb.LoadBalancerCreate struct is populated. This is the perfect place to implement your defaulting logic.
 // this helper gunction is required because of Golang strict type-checking
 func GenerateCreateInput(p *v1alpha1.HostedLoadBalancerParameters) *hlb.LoadBalancerCreate {
-    return &hlb.LoadBalancerCreate{
+	create := &hlb.LoadBalancerCreate{
 		Name:                         p.Name,
 		Internal:                     p.Internal,
 		Subnets:                      p.Subnets,
@@ -496,66 +505,89 @@ func GenerateCreateInput(p *v1alpha1.HostedLoadBalancerParameters) *hlb.LoadBala
 		Tags:                         p.Tags,
 		ZoneID:                       p.ZoneID,
 		ZoneName:                     p.ZoneName,
-    }
+	}
+
+	if p.AccessLogs != nil {
+		create.AccessLogs = &hlb.AccessLogs{
+			Bucket:  p.AccessLogs.Bucket,
+			Enabled: p.AccessLogs.Enabled,
+			Prefix:  p.AccessLogs.Prefix,
+		}
+	}
+
+	if p.LaunchConfig != nil {
+		create.LaunchConfig = &hlb.LaunchConfig{
+			InstanceType:     p.LaunchConfig.InstanceType,
+			MinInstanceCount: p.LaunchConfig.MinInstanceCount,
+			MaxInstanceCount: p.LaunchConfig.MaxInstanceCount,
+			TargetCPUUsage:   p.LaunchConfig.TargetCPUUsage,
+		}
+	}
+
+	return create
 }
 
 
 // IsUpToDate checks ONLY the configurable fields.
 func IsUpToDate(p *v1alpha1.HostedLoadBalancerParameters, lb *hlb.LoadBalancer) bool {
-    // Compare a configurable field from the spec...
-    if p.ClientKeepAlive != lb.ClientKeepAlive {
+    if p.ClientKeepAlive != 0 && p.ClientKeepAlive != lb.ClientKeepAlive {
         return false
     }
-    // ...with the corresponding field from the observed resource.
-
-    if p.ConnectionDrainingTimeout != lb.ConnectionDrainingTimeout {
+    if p.ConnectionDrainingTimeout != 0 && p.ConnectionDrainingTimeout != lb.ConnectionDrainingTimeout {
         return false
     }
-
-	if p.Ec2IamRole != lb.Ec2IamRole {
+    if p.Ec2IamRole != "" && p.Ec2IamRole != lb.Ec2IamRole {
         return false
     }
-	
-	if p.EnableCrossZoneLoadBalancing != lb.EnableCrossZoneLoadBalancing {
+    if p.EnableCrossZoneLoadBalancing != "" && p.EnableCrossZoneLoadBalancing != lb.EnableCrossZoneLoadBalancing {
         return false
     }
-
-	if p.EnableDeletionProtection != lb.EnableDeletionProtection {
+    if p.EnableDeletionProtection != false && p.EnableDeletionProtection != lb.EnableDeletionProtection {
         return false
     }
-
-	if p.EnableHttp2 != lb.EnableHttp2 {
+    if p.EnableHttp2 != false && p.EnableHttp2 != lb.EnableHttp2 {
         return false
     }
-
-	if p.IdleTimeout != lb.IdleTimeout {
+    if p.IdleTimeout != 0 && p.IdleTimeout != lb.IdleTimeout {
         return false
     }
-
-	if p.Name != lb.Name {
+    if p.Name != "" && p.Name != lb.Name {
         return false
     }
-
-	if p.PreferredMaintenanceWindow != lb.PreferredMaintenanceWindow {
+    if p.PreferredMaintenanceWindow != "" && p.PreferredMaintenanceWindow != lb.PreferredMaintenanceWindow {
         return false
     }
-
-	if p.PreserveHostHeader != lb.PreserveHostHeader {
+    if p.PreserveHostHeader != false && p.PreserveHostHeader != lb.PreserveHostHeader {
         return false
     }
-
-	if p.XffHeaderProcessingMode != lb.XffHeaderProcessingMode {
+    if p.XffHeaderProcessingMode != "" && p.XffHeaderProcessingMode != lb.XffHeaderProcessingMode {
         return false
     }
-
-    // Use cmp.Equal for slices and maps
-	if !cmp.Equal(p.SecurityGroups, lb.SecurityGroups) {
+    if len(p.SecurityGroups) > 0 && !cmp.Equal(p.SecurityGroups, lb.SecurityGroups) {
         return false
     }
-	if !cmp.Equal(p.Tags, lb.Tags) {
+    if len(p.Tags) > 0 && !cmp.Equal(p.Tags, lb.Tags) {
         return false
     }
-
-
-	return true
+    if p.AccessLogs != nil && !cmp.Equal(p.AccessLogs, lb.AccessLogs) {
+        return false
+    }
+    if p.LaunchConfig != nil {
+        if lb.LaunchConfig == nil {
+            return false
+        }
+        if p.LaunchConfig.InstanceType != "" && p.LaunchConfig.InstanceType != lb.LaunchConfig.InstanceType {
+            return false
+        }
+        if p.LaunchConfig.MinInstanceCount != 0 && p.LaunchConfig.MinInstanceCount != lb.LaunchConfig.MinInstanceCount {
+            return false
+        }
+        if p.LaunchConfig.MaxInstanceCount != 0 && p.LaunchConfig.MaxInstanceCount != lb.LaunchConfig.MaxInstanceCount {
+            return false
+        }
+        if p.LaunchConfig.TargetCPUUsage != 0 && p.LaunchConfig.TargetCPUUsage != lb.LaunchConfig.TargetCPUUsage {
+            return false
+        }
+    }
+    return true
 }
