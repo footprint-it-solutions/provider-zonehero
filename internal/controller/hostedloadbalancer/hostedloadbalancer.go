@@ -411,6 +411,14 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 		}
 	}
 
+	if cr.Spec.ForProvider.AccessLogs != nil {
+		input.AccessLogs = &hlb.AccessLogs{
+			Bucket:  cr.Spec.ForProvider.AccessLogs.Bucket,
+			Enabled: cr.Spec.ForProvider.AccessLogs.Enabled,
+			Prefix:  cr.Spec.ForProvider.AccessLogs.Prefix,
+		}
+	}
+
 
 	id := meta.GetExternalName(cr)
 	_, err := c.hlb.UpdateLoadBalancer(ctx, id, input)
