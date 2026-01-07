@@ -37,4 +37,3 @@ spec:
     zoneName: k3s-devel.footprintit.net
   providerConfigRef:
     name: zonehero-provider-test-partition
----

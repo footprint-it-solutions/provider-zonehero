@@ -91,4 +91,3 @@ spec:
     overprovisioningFactor: 1.1
   providerConfigRef:
     name: zonehero-provider-test-partition
----
