@@ -1,0 +1,12 @@
+apiVersion: pkg.crossplane.io/v1
+kind: Provider
+metadata:
+  # The name for your provider installation
+  name: provider-zonehero
+spec:
+  # The full OCI image path to your package in Harbor
+  package: 162646919026.dkr.ecr.eu-west-1.amazonaws.com/crossplane/provider-zonehero:7d84aeb
+
+  # Optional: Determines how often to check for new versions of the package.
+  # Can be 'Always' or 'IfNotPresent'.
+  packagePullPolicy: IfNotPresent
