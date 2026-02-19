@@ -9,3 +9,4 @@ cover.out
 .DS_Store
 examples/provider/*.sh
 examples/provider/secret_*.yaml
+examples/storeconfig/secret.yaml

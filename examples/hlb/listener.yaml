@@ -8,7 +8,7 @@ spec:
       name: footprint-hlb-test
     port: 80
     protocol: "HTTP"
-    targetGroupArn: "arn:aws:elasticloadbalancing:eu-west-1:203918840229:targetgroup/hlb-test-tg/835f57bf8351d3e0" # target group linked to the hlb-test-alb
+    targetGroupArn: "arn:aws:elasticloadbalancing:eu-west-1:162646919026:targetgroup/k8s-envoygat-envoyenv-e53adf6655/f1a30a8e2eb0c926" # target group linked to the hlb-test-alb
     overprovisioningFactor: 1.1
   providerConfigRef:
     name: zonehero-provider-test-partition
