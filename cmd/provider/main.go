@@ -53,6 +53,12 @@ import (
 )
 
 func main() {
+	// If HOME is unset or set to root (which is common in containers), set it to /tmp
+	// This ensures that the HLB Terraform provider can write credentials to ~/.hlb
+	if home := os.Getenv("HOME"); home == "" || home == "/" {
+		os.Setenv("HOME", "/tmp")
+	}
+
 	var (
 		app            = kingpin.New(filepath.Base(os.Args[0]), "Template support for Crossplane.").DefaultEnvars()
 		debug          = app.Flag("debug", "Run with debug logging.").Short('d').Bool()
