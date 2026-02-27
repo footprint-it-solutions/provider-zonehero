@@ -56,7 +56,10 @@ func main() {
 	// If HOME is unset or set to root (which is common in containers), set it to /tmp
 	// This ensures that the HLB Terraform provider can write credentials to ~/.hlb
 	if home := os.Getenv("HOME"); home == "" || home == "/" {
-		os.Setenv("HOME", "/tmp")
+		if err := os.Setenv("HOME", "/tmp"); err != nil {
+			fmt.Fprintf(os.Stderr, "Cannot set HOME environment variable: %v\n", err)
+			os.Exit(1)
+		}
 	}
 
 	var (
