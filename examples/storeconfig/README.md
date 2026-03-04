@@ -30,10 +30,10 @@ Create a file named `zonehero-creds.json` with your credentials:
 }
 ```
 
-Then create the secret in the `crossplane-system` namespace:
+Then create the secret in the `crossplane-system` namespace (using a name that reflects your partition, e.g., `zonehero-creds-test-partition`):
 
 ```bash
-kubectl create secret generic zonehero-creds -n crossplane-system --from-file=credentials=zonehero-creds.json
+kubectl create secret generic zonehero-creds-test-partition -n crossplane-system --from-file=credentials=zonehero-creds.json
 ```
 
 Alternatively, you can apply the YAML manifest directly after populating the base64 encoded data or using stringData (as shown in the examples), but ensure you **do not commit real credentials to version control**.
@@ -42,8 +42,8 @@ Alternatively, you can apply the YAML manifest directly after populating the bas
 
 If you prefer to manage credentials in AWS SSM Parameter Store:
 
-1. Create a parameter in SSM (e.g., `/zonehero/provider/credentials`) with the JSON credential content.
-2. Install and configure [External Secrets Operator](https://external-secrets.io/) in your cluster.
+1. Create a parameter in SSM (e.g., `/zonehero/test-partition/credentials`, reflecting your partition) with the JSON credential content.
+2. Ensure [External Secrets Operator](https://external-secrets.io/) is installed and configured in your cluster. If it is already installed, verify the ServiceAccount configuration.
 3. Ensure the ServiceAccount used by External Secrets (e.g., `external-secrets-sa`) is annotated with an IAM Role that has permissions to read the SSM parameter.
 
    Example annotation:
@@ -61,7 +61,7 @@ If you prefer to manage credentials in AWS SSM Parameter Store:
    ```bash
    kubectl apply -f external-secret.yaml
    ```
-   This will create a `zonehero-creds` Secret in the `crossplane-system` namespace, synced from SSM.
+   This will create a Secret (e.g., `zonehero-creds-test-partition`) in the `crossplane-system` namespace, synced from SSM.
 
 ### StoreConfig (External Secret Store)
 
