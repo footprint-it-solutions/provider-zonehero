@@ -25,7 +25,6 @@ import (
 	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
 )
 
-
 type DeploymentStatus struct {
 	ErrorMessage string `json:"errorMessage,omitempty"`
 	Metadata     []byte `json:"metadata,omitempty"`
@@ -35,77 +34,77 @@ type DeploymentStatus struct {
 // HostedLoadBalancerParameters are the configurable fields of a HostedLoadBalancer.
 type HostedLoadBalancerParameters struct {
 	// +optional
-	AccountID                    string            `json:"accountId,omitempty"`
+	AccountID string `json:"accountId,omitempty"`
 	// +optional
 	// +kubebuilder:default=3600
-	ClientKeepAlive              int               `json:"clientKeepAlive,omitempty"`
+	ClientKeepAlive int `json:"clientKeepAlive,omitempty"`
 	// +optional
 	// +kubebuilder:default=10
-	ConnectionDrainingTimeout    int               `json:"connectionDrainingTimeout,omitempty"`
+	ConnectionDrainingTimeout int `json:"connectionDrainingTimeout,omitempty"`
 	// +optional
-	CreatedAt                    metav1.Time       `json:"createdAt,omitempty"`
+	CreatedAt metav1.Time `json:"createdAt,omitempty"`
 	// +optional
-	DeploymentStatus             *DeploymentStatus `json:"deploymentStatus,omitempty"`
+	DeploymentStatus *DeploymentStatus `json:"deploymentStatus,omitempty"`
 	// +optional
-	AccessLogs                   *AccessLogs       `json:"accessLogs,omitempty"`
+	AccessLogs *AccessLogs `json:"accessLogs,omitempty"`
 	// +optional
-	LaunchConfig                 *LaunchConfig     `json:"launchConfig,omitempty"`
+	LaunchConfig *LaunchConfig `json:"launchConfig,omitempty"`
 	// +optional
-	DNSName                      string            `json:"dnsName,omitempty"`
+	DNSName string `json:"dnsName,omitempty"`
 	// +optional
 	// +kubebuilder:default=lb-standard
-	Ec2IamRole                   string            `json:"ec2IamRole,omitempty"`
+	Ec2IamRole string `json:"ec2IamRole,omitempty"`
 	// +optional
 	// +kubebuilder:default=avoid
-	EnableCrossZoneLoadBalancing string            `json:"enableCrossZoneLoadBalancing,omitempty"`
+	EnableCrossZoneLoadBalancing string `json:"enableCrossZoneLoadBalancing,omitempty"`
 	// +optional
 	// +kubebuilder:default=false
-	EnableDeletionProtection     bool              `json:"enableDeletionProtection,omitempty"`
+	EnableDeletionProtection bool `json:"enableDeletionProtection,omitempty"`
 	// +optional
 	// +kubebuilder:default=true
-	EnableHttp2                  bool              `json:"enableHttp2,omitempty"`
+	EnableHttp2 bool `json:"enableHttp2,omitempty"`
 	// +optional
-	ExpiresAt                    int               `json:"expiresAt,omitempty"`
+	ExpiresAt int `json:"expiresAt,omitempty"`
 	// +optional
-	ID                           string            `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
 	// +optional
 	// +kubebuilder:default=60
-	IdleTimeout                  int               `json:"idleTimeout,omitempty"`
+	IdleTimeout int `json:"idleTimeout,omitempty"`
 	// +optional
 	// +kubebuilder:default=false
-	Internal                     bool              `json:"internal,omitempty"`
+	Internal bool `json:"internal,omitempty"`
 	// +optional
 	// +kubebuilder:default=ipv4
-	IPAddressType                string            `json:"ipAddressType,omitempty"`
+	IPAddressType string `json:"ipAddressType,omitempty"`
 	// +optional
-	Name                         string            `json:"name,omitempty"`
+	Name string `json:"name,omitempty"`
 	// +optional
-	NamePrefix                   string            `json:"namePrefix,omitempty"`
+	NamePrefix string `json:"namePrefix,omitempty"`
 	// +optional
 	// +kubebuilder:default=""
-	PreferredMaintenanceWindow   string            `json:"preferredMaintenanceWindow,omitempty"`
+	PreferredMaintenanceWindow string `json:"preferredMaintenanceWindow,omitempty"`
 	// +optional
 	// +kubebuilder:default=false
-	PreserveHostHeader           bool              `json:"preserveHostHeader,omitempty"`
+	PreserveHostHeader bool `json:"preserveHostHeader,omitempty"`
 	// +optional
-	SecurityGroups               []string          `json:"securityGroups,omitempty"`
+	SecurityGroups []string `json:"securityGroups,omitempty"`
 	// +optional
-	State                        string            `json:"state,omitempty"`
+	State string `json:"state,omitempty"`
 	// +optional
-	Subnets                      []string          `json:"subnets,omitempty"`
+	Subnets []string `json:"subnets,omitempty"`
 	// +optional
-	Tags                         map[string]string `json:"tags,omitempty"`
+	Tags map[string]string `json:"tags,omitempty"`
 	// +optional
-	UpdatedAt                    metav1.Time       `json:"updatedAt,omitempty"`
+	UpdatedAt metav1.Time `json:"updatedAt,omitempty"`
 	// +optional
-	URI                          string            `json:"uri,omitempty"`
+	URI string `json:"uri,omitempty"`
 	// +optional
 	// +kubebuilder:default=append
-	XffHeaderProcessingMode      string            `json:"xffHeaderProcessingMode,omitempty"`
+	XffHeaderProcessingMode string `json:"xffHeaderProcessingMode,omitempty"`
 	// +optional
-	ZoneID                       string            `json:"zoneId,omitempty"`
+	ZoneID string `json:"zoneId,omitempty"`
 	// +optional
-	ZoneName                     string            `json:"zoneName,omitempty"`
+	ZoneName string `json:"zoneName,omitempty"`
 }
 
 // AccessLogs defines the access log configuration for a load balancer.
@@ -129,7 +128,6 @@ type LaunchConfig struct {
 	// +optional
 	TargetCPUUsage int `json:"targetCpuUsage,omitempty"`
 }
-
 
 // LoadBalancerObservation are the observable fields of a LoadBalancer.
 type HostedLoadBalancerObservation struct {
