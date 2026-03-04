@@ -20,8 +20,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"regexp"
+	"strings"
 
 	"github.com/crossplane/crossplane-runtime/pkg/feature"
 
@@ -30,8 +30,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"github.com/crossplane/crossplane-runtime/pkg/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/crossplane/crossplane-runtime/pkg/connection"
 	"github.com/crossplane/crossplane-runtime/pkg/controller"
@@ -46,25 +46,25 @@ import (
 	apisv1beta1 "github.com/footprint-it-solutions/provider-zonehero/apis/v1beta1"
 	"github.com/footprint-it-solutions/provider-zonehero/internal/features"
 
-	"gitlab.guerraz.net/HLB/hlb-terraform-provider/hlb"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"gitlab.guerraz.net/HLB/hlb-terraform-provider/hlb"
 
-	 "github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp"
 
-	 "net"
+	"net"
 )
 
 const (
-	errNotHostedLoadBalancer    = "managed resource is not a HostedLoadBalancer custom resource"
-	errTrackPCUsage = "cannot track ProviderConfig usage"
-	errGetPC        = "cannot get ProviderConfig"
-	errGetCreds     = "cannot get credentials"
+	errNotHostedLoadBalancer = "managed resource is not a HostedLoadBalancer custom resource"
+	errTrackPCUsage          = "cannot track ProviderConfig usage"
+	errGetPC                 = "cannot get ProviderConfig"
+	errGetCreds              = "cannot get credentials"
 
-	errNewClient       = "cannot create HLB client"
-	errCreateLB        = "cannot create load balancer"
-	errUpdateLB        = "cannot update load balancer"
-	errDeleteLB        = "cannot delete load balancer"
+	errNewClient = "cannot create HLB client"
+	errCreateLB  = "cannot create load balancer"
+	errUpdateLB  = "cannot update load balancer"
+	errDeleteLB  = "cannot delete load balancer"
 
 	LBStateActive          = "active"
 	LBStateCreating        = "creating"
@@ -86,8 +86,8 @@ func Setup(mgr ctrl.Manager, o controller.Options) error {
 
 	opts := []managed.ReconcilerOption{
 		managed.WithExternalConnecter(&connector{
-			kube:         mgr.GetClient(),
-			usage:        resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1beta1.ProviderConfigUsage{}),
+			kube:        mgr.GetClient(),
+			usage:       resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1beta1.ProviderConfigUsage{}),
 			newClientFn: hlb.NewClient}),
 		managed.WithLogger(o.Logger.WithValues("controller", name)),
 		managed.WithPollInterval(o.PollInterval),
@@ -126,8 +126,8 @@ func Setup(mgr ctrl.Manager, o controller.Options) error {
 // A connector is expected to produce an ExternalClient when its Connect method
 // is called.
 type connector struct {
-	kube         client.Client
-	usage        resource.Tracker
+	kube        client.Client
+	usage       resource.Tracker
 	newClientFn func(ctx context.Context, apiKey string, awsConfig aws.Config, partition string) (*hlb.Client, error)
 }
 
@@ -158,9 +158,9 @@ func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.E
 	}
 
 	type Credentials struct {
-		APIKey string `json:"api_key"`
-		AWSRegion string `json:"aws_region"`
-		AWSProfile string `json:"aws_profile"`
+		APIKey       string `json:"api_key"`
+		AWSRegion    string `json:"aws_region"`
+		AWSProfile   string `json:"aws_profile"`
 		AWSPartition string `json:"partition"`
 	}
 
@@ -172,7 +172,7 @@ func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.E
 	opts := []func(*config.LoadOptions) error{}
 
 	apiKey := creds.APIKey
-	
+
 	if creds.AWSRegion != "" {
 		opts = append(opts, config.WithRegion(creds.AWSRegion))
 	}
@@ -183,9 +183,8 @@ func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.E
 
 	awsCfg, err := config.LoadDefaultConfig(ctx, opts...)
 	if err != nil {
-		return nil, fmt.Errorf("error loading AWS config: %v", err)
+		return nil, fmt.Errorf("error loading AWS config: %w", err)
 	}
-
 
 	svc, err := c.newClientFn(ctx, apiKey, awsCfg, creds.AWSPartition)
 	if err != nil {
@@ -244,43 +243,10 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	}
 
 	// The resource exists, so we can now check its state.
-	switch lb.State {
-	case LBStateFailed:
-		extendedErrorMessage := "None"
-		if lb.DeploymentStatus != nil && lb.DeploymentStatus.ErrorMessage != "" {
-			extendedErrorMessage = lb.DeploymentStatus.ErrorMessage
-		}
-		message := fmt.Sprintf("load balancer (%s) entered failed state, with message '%s'", lb.ID, extendedErrorMessage)
-		cr.SetConditions(xpv1.Unavailable().WithMessage(message))
-		return managed.ExternalObservation{
-			ResourceExists:   true,
-			ResourceUpToDate: true, // No drift, the failure is external.
-		}, nil
-	case LBStatePendingDeletion, LBStateDeleting:
-		cr.SetConditions(xpv1.Deleting())
-		return managed.ExternalObservation{
-			ResourceExists:   true,
-			ResourceUpToDate: true,
-		}, nil
-	case LBStateDeleted:
-		return managed.ExternalObservation{ResourceExists: false}, nil
-	case LBStatePendingCreation, LBStateCreating:
-		cr.SetConditions(xpv1.Creating())
-		return managed.ExternalObservation{
-			ResourceExists:   true,
-			ResourceUpToDate: true, // Waiting for provider.
-		}, nil
-	case LBStateActive:
-		cr.SetConditions(xpv1.Available())
-	default:
-		// If it's an unknown state, it's safest to consider it unavailable.
-		cr.SetConditions(xpv1.Unavailable().WithMessage("The external resource is in an unknown state: " + lb.State))
-		return managed.ExternalObservation{
-			ResourceExists:   true,
-			ResourceUpToDate: true, // Prevent updates.
-		}, nil
+	obs, done, err := c.determineObservationByState(cr, lb)
+	if done {
+		return obs, err
 	}
-
 
 	// Step 2: Update the status of your Kubernetes resource with what you observed.
 	// This is crucial for users to see the state of the external resource.
@@ -295,11 +261,10 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		cr.Status.AtProvider.CreatedAt = &metav1.Time{Time: lb.CreatedAt}
 	}
 
-
 	// Step 3: Call IsUpToDate to check for drift and return the final observation.
 	return managed.ExternalObservation{
 		// The resource definitely exists at this point.
-		ResourceExists:   true,
+		ResourceExists: true,
 
 		// Call the helper function here. Its boolean result is assigned
 		// directly to the ResourceUpToDate field.
@@ -309,6 +274,46 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		// resource. These will be stored as the connection secret.
 		ConnectionDetails: managed.ConnectionDetails{},
 	}, nil
+}
+
+func (c *external) determineObservationByState(cr *v1alpha1.HostedLoadBalancer, lb *hlb.LoadBalancer) (managed.ExternalObservation, bool, error) {
+	switch lb.State {
+	case LBStateFailed:
+		extendedErrorMessage := "None"
+		if lb.DeploymentStatus != nil && lb.DeploymentStatus.ErrorMessage != "" {
+			extendedErrorMessage = lb.DeploymentStatus.ErrorMessage
+		}
+		message := fmt.Sprintf("load balancer (%s) entered failed state, with message '%s'", lb.ID, extendedErrorMessage)
+		cr.SetConditions(xpv1.Unavailable().WithMessage(message))
+		return managed.ExternalObservation{
+			ResourceExists:   true,
+			ResourceUpToDate: true, // No drift, the failure is external.
+		}, true, nil
+	case LBStatePendingDeletion, LBStateDeleting:
+		cr.SetConditions(xpv1.Deleting())
+		return managed.ExternalObservation{
+			ResourceExists:   true,
+			ResourceUpToDate: true,
+		}, true, nil
+	case LBStateDeleted:
+		return managed.ExternalObservation{ResourceExists: false}, true, nil
+	case LBStatePendingCreation, LBStateCreating:
+		cr.SetConditions(xpv1.Creating())
+		return managed.ExternalObservation{
+			ResourceExists:   true,
+			ResourceUpToDate: true, // Waiting for provider.
+		}, true, nil
+	case LBStateActive:
+		cr.SetConditions(xpv1.Available())
+		return managed.ExternalObservation{}, false, nil
+	default:
+		// If it's an unknown state, it's safest to consider it unavailable.
+		cr.SetConditions(xpv1.Unavailable().WithMessage("The external resource is in an unknown state: " + lb.State))
+		return managed.ExternalObservation{
+			ResourceExists:   true,
+			ResourceUpToDate: true, // Prevent updates.
+		}, true, nil
+	}
 }
 
 func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
@@ -373,7 +378,6 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 		cr.Status.AtProvider.CreatedAt = &metav1.Time{Time: lb.CreatedAt}
 	}
 
-
 	return managed.ExternalCreation{
 		// Optionally return any details that may be required to connect to the
 		// external resource. These will be stored as the connection secret.
@@ -388,19 +392,19 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 	}
 
 	input := &hlb.LoadBalancerUpdate{
-			Name:                         &cr.Spec.ForProvider.Name,
-			Ec2IamRole:                   &cr.Spec.ForProvider.Ec2IamRole,
-			EnableDeletionProtection:     &cr.Spec.ForProvider.EnableDeletionProtection,
-			EnableHttp2:                  &cr.Spec.ForProvider.EnableHttp2,
-			IdleTimeout:                  &cr.Spec.ForProvider.IdleTimeout,
-			PreserveHostHeader:           &cr.Spec.ForProvider.PreserveHostHeader,
-			EnableCrossZoneLoadBalancing: &cr.Spec.ForProvider.EnableCrossZoneLoadBalancing,
-			ClientKeepAlive:              &cr.Spec.ForProvider.ClientKeepAlive,
-			XffHeaderProcessingMode:      &cr.Spec.ForProvider.XffHeaderProcessingMode,
-			ConnectionDrainingTimeout:    &cr.Spec.ForProvider.ConnectionDrainingTimeout,
-			PreferredMaintenanceWindow:   &cr.Spec.ForProvider.PreferredMaintenanceWindow,
-			Tags:                         &cr.Spec.ForProvider.Tags,
-		}
+		Name:                         &cr.Spec.ForProvider.Name,
+		Ec2IamRole:                   &cr.Spec.ForProvider.Ec2IamRole,
+		EnableDeletionProtection:     &cr.Spec.ForProvider.EnableDeletionProtection,
+		EnableHttp2:                  &cr.Spec.ForProvider.EnableHttp2,
+		IdleTimeout:                  &cr.Spec.ForProvider.IdleTimeout,
+		PreserveHostHeader:           &cr.Spec.ForProvider.PreserveHostHeader,
+		EnableCrossZoneLoadBalancing: &cr.Spec.ForProvider.EnableCrossZoneLoadBalancing,
+		ClientKeepAlive:              &cr.Spec.ForProvider.ClientKeepAlive,
+		XffHeaderProcessingMode:      &cr.Spec.ForProvider.XffHeaderProcessingMode,
+		ConnectionDrainingTimeout:    &cr.Spec.ForProvider.ConnectionDrainingTimeout,
+		PreferredMaintenanceWindow:   &cr.Spec.ForProvider.PreferredMaintenanceWindow,
+		Tags:                         &cr.Spec.ForProvider.Tags,
+	}
 
 	if cr.Spec.ForProvider.LaunchConfig != nil {
 		input.LaunchConfig = &hlb.LaunchConfig{
@@ -418,7 +422,6 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 			Prefix:  cr.Spec.ForProvider.AccessLogs.Prefix,
 		}
 	}
-
 
 	id := meta.GetExternalName(cr)
 	_, err := c.hlb.UpdateLoadBalancer(ctx, id, input)
@@ -448,8 +451,8 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 	c.hlb.SetDebug(true)
 
 	// // Set the "Deleting" condition.
-    // // This sets the Ready condition to False with a reason of "Deleting".
-    // cr.SetConditions(xpv1.Deleting())
+	// // This sets the Ready condition to False with a reason of "Deleting".
+	// cr.SetConditions(xpv1.Deleting())
 
 	id := meta.GetExternalName(cr)
 	err := c.hlb.DeleteLoadBalancer(ctx, id)
@@ -487,7 +490,6 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 func (c *external) Disconnect(ctx context.Context) error {
 	return nil
 }
-
 
 // this helper function translates hlb.LoadBalancerCreate type to a type compatible with v1alpha1
 // By using a translation function (GenerateCreateInput), you gain complete control over how the
@@ -535,67 +537,85 @@ func GenerateCreateInput(p *v1alpha1.HostedLoadBalancerParameters) *hlb.LoadBala
 	return create
 }
 
-
 // IsUpToDate checks ONLY the configurable fields.
 func IsUpToDate(p *v1alpha1.HostedLoadBalancerParameters, lb *hlb.LoadBalancer) bool {
-    if p.ClientKeepAlive != 0 && p.ClientKeepAlive != lb.ClientKeepAlive {
-        return false
-    }
-    if p.ConnectionDrainingTimeout != 0 && p.ConnectionDrainingTimeout != lb.ConnectionDrainingTimeout {
-        return false
-    }
-    if p.Ec2IamRole != "" && p.Ec2IamRole != lb.Ec2IamRole {
-        return false
-    }
-    if p.EnableCrossZoneLoadBalancing != "" && p.EnableCrossZoneLoadBalancing != lb.EnableCrossZoneLoadBalancing {
-        return false
-    }
-    if p.EnableDeletionProtection != false && p.EnableDeletionProtection != lb.EnableDeletionProtection {
-        return false
-    }
-    if p.EnableHttp2 != false && p.EnableHttp2 != lb.EnableHttp2 {
-        return false
-    }
-    if p.IdleTimeout != 0 && p.IdleTimeout != lb.IdleTimeout {
-        return false
-    }
-    if p.Name != "" && p.Name != lb.Name {
-        return false
-    }
-    if p.PreferredMaintenanceWindow != "" && p.PreferredMaintenanceWindow != lb.PreferredMaintenanceWindow {
-        return false
-    }
-    if p.PreserveHostHeader != false && p.PreserveHostHeader != lb.PreserveHostHeader {
-        return false
-    }
-    if p.XffHeaderProcessingMode != "" && p.XffHeaderProcessingMode != lb.XffHeaderProcessingMode {
-        return false
-    }
-    if len(p.SecurityGroups) > 0 && !cmp.Equal(p.SecurityGroups, lb.SecurityGroups) {
-        return false
-    }
-    if len(p.Tags) > 0 && !cmp.Equal(p.Tags, lb.Tags) {
-        return false
-    }
-    if p.AccessLogs != nil && !cmp.Equal(p.AccessLogs, lb.AccessLogs) {
-        return false
-    }
-    if p.LaunchConfig != nil {
-        if lb.LaunchConfig == nil {
-            return false
-        }
-        if p.LaunchConfig.InstanceType != "" && p.LaunchConfig.InstanceType != lb.LaunchConfig.InstanceType {
-            return false
-        }
-        if p.LaunchConfig.MinInstanceCount != 0 && p.LaunchConfig.MinInstanceCount != lb.LaunchConfig.MinInstanceCount {
-            return false
-        }
-        if p.LaunchConfig.MaxInstanceCount != 0 && p.LaunchConfig.MaxInstanceCount != lb.LaunchConfig.MaxInstanceCount {
-            return false
-        }
-        if p.LaunchConfig.TargetCPUUsage != 0 && p.LaunchConfig.TargetCPUUsage != lb.LaunchConfig.TargetCPUUsage {
-            return false
-        }
-    }
-    return true
+	if !isBaseUpToDate(p, lb) {
+		return false
+	}
+	if !isAdvancedUpToDate(p, lb) {
+		return false
+	}
+	return isLaunchConfigUpToDate(p.LaunchConfig, lb.LaunchConfig)
+}
+
+func isBaseUpToDate(p *v1alpha1.HostedLoadBalancerParameters, lb *hlb.LoadBalancer) bool {
+	if p.ClientKeepAlive != 0 && p.ClientKeepAlive != lb.ClientKeepAlive {
+		return false
+	}
+	if p.ConnectionDrainingTimeout != 0 && p.ConnectionDrainingTimeout != lb.ConnectionDrainingTimeout {
+		return false
+	}
+	if p.Ec2IamRole != "" && p.Ec2IamRole != lb.Ec2IamRole {
+		return false
+	}
+	if p.EnableCrossZoneLoadBalancing != "" && p.EnableCrossZoneLoadBalancing != lb.EnableCrossZoneLoadBalancing {
+		return false
+	}
+	if p.EnableDeletionProtection && p.EnableDeletionProtection != lb.EnableDeletionProtection {
+		return false
+	}
+	if p.EnableHttp2 && p.EnableHttp2 != lb.EnableHttp2 {
+		return false
+	}
+	if p.IdleTimeout != 0 && p.IdleTimeout != lb.IdleTimeout {
+		return false
+	}
+	return true
+}
+
+func isAdvancedUpToDate(p *v1alpha1.HostedLoadBalancerParameters, lb *hlb.LoadBalancer) bool {
+	if p.Name != "" && p.Name != lb.Name {
+		return false
+	}
+	if p.PreferredMaintenanceWindow != "" && p.PreferredMaintenanceWindow != lb.PreferredMaintenanceWindow {
+		return false
+	}
+	if p.PreserveHostHeader && p.PreserveHostHeader != lb.PreserveHostHeader {
+		return false
+	}
+	if p.XffHeaderProcessingMode != "" && p.XffHeaderProcessingMode != lb.XffHeaderProcessingMode {
+		return false
+	}
+	if len(p.SecurityGroups) > 0 && !cmp.Equal(p.SecurityGroups, lb.SecurityGroups) {
+		return false
+	}
+	if len(p.Tags) > 0 && !cmp.Equal(p.Tags, lb.Tags) {
+		return false
+	}
+	if p.AccessLogs != nil && !cmp.Equal(p.AccessLogs, lb.AccessLogs) {
+		return false
+	}
+	return true
+}
+
+func isLaunchConfigUpToDate(p *v1alpha1.LaunchConfig, lb *hlb.LaunchConfig) bool {
+	if p == nil {
+		return true
+	}
+	if lb == nil {
+		return false
+	}
+	if p.InstanceType != "" && p.InstanceType != lb.InstanceType {
+		return false
+	}
+	if p.MinInstanceCount != 0 && p.MinInstanceCount != lb.MinInstanceCount {
+		return false
+	}
+	if p.MaxInstanceCount != 0 && p.MaxInstanceCount != lb.MaxInstanceCount {
+		return false
+	}
+	if p.TargetCPUUsage != 0 && p.TargetCPUUsage != lb.TargetCPUUsage {
+		return false
+	}
+	return true
 }

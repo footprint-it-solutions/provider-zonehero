@@ -236,7 +236,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		}, nil
 	}
 
-	if meta.WasDeleted(mg){
+	if meta.WasDeleted(mg) {
 		cr.SetConditions(xpv1.Deleting())
 	}
 
@@ -452,7 +452,6 @@ func GenerateUpdateInput(p *v1alpha1.ListenerParameters) *hlb.ListenerUpdate {
 		Protocol:                 &p.Protocol,
 		TargetGroupARN:           &p.TargetGroupARN,
 	}
-
 
 	if p.CertificateSecretsName != "" {
 		update.CertificateSecretsName = &p.CertificateSecretsName
