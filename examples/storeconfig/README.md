@@ -17,7 +17,7 @@ Crossplane allows storing credentials and connection secrets in various backends
 - `test-secret.yaml`: A template for creating a secret with placeholders.
 - `external-secret.yaml`: Example of retrieving credentials from AWS SSM Parameter Store using External Secrets Operator.
 
-**Usage (Kubernetes Secret):**
+**Storing ZoneHero credentials in a Kubernetes secret:**
 
 Create a file named `zonehero-creds.json` with your credentials:
 
@@ -38,7 +38,7 @@ kubectl create secret generic zonehero-creds-test-partition -n crossplane-system
 
 Alternatively, you can apply the YAML manifest directly after populating the base64 encoded data or using stringData (as shown in the examples), but ensure you **do not commit real credentials to version control**.
 
-**Usage (AWS SSM with External Secrets):**
+**Storing the ZoneHero credentials in AWS SSM Parameter Store and syncing to Kubernetes with the External Secrets Operator:**
 
 If you prefer to manage credentials in AWS SSM Parameter Store, please refer to our internal documentation for setting up the External Secrets Operator and ClusterSecretStore:
 [External Secrets Documentation](https://github.com/footprint-it-solutions/knowledgebase/blob/main/docs/external-secrets.md)
