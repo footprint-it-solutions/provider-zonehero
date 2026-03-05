@@ -40,24 +40,12 @@ Alternatively, you can apply the YAML manifest directly after populating the bas
 
 **Usage (AWS SSM with External Secrets):**
 
-If you prefer to manage credentials in AWS SSM Parameter Store:
+If you prefer to manage credentials in AWS SSM Parameter Store, please refer to our internal documentation for setting up the External Secrets Operator and ClusterSecretStore:
+[External Secrets Documentation](https://github.com/footprint-it-solutions/knowledgebase/blob/main/docs/external-secrets.md)
 
 1. Create a parameter in SSM (e.g., `/zonehero/test-partition/credentials`, reflecting your partition) with the JSON credential content.
-2. Ensure [External Secrets Operator](https://external-secrets.io/) is installed and configured in your cluster. If it is already installed, verify the ServiceAccount configuration.
-3. Ensure the ServiceAccount used by External Secrets (e.g., `external-secrets-sa`) is annotated with an IAM Role that has permissions to read the SSM parameter.
-
-   Example annotation:
-   ```yaml
-   apiVersion: v1
-   kind: ServiceAccount
-   metadata:
-     name: external-secrets-sa
-     namespace: crossplane-system
-     annotations:
-       eks.amazonaws.com/role-arn: arn:aws:iam::<YOUR_AWS_ACCOUNT_ID>:role/external-secrets
-   ```
-
-4. Apply `external-secret.yaml` (ensure you update the AWS region and service account details):
+2. Ensure you have a valid `ClusterSecretStore` or `SecretStore` configured as per the documentation.
+3. Apply `external-secret.yaml` (ensure you update the `secretStoreRef` to match your store configuration):
    ```bash
    kubectl apply -f external-secret.yaml
    ```
