@@ -6,7 +6,6 @@ package heronodegroup
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -109,9 +108,9 @@ func (e *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 					map[string]interface{}{"tags": map[string]interface{}{"karpenter.sh/discovery": cr.Spec.ForProvider.ClusterName}},
 				},
 				// Inject API Key if provided via Secret (simplified logic for brevity)
-				"userData": fmt.Sprintf(`#!/bin/bash
+				"userData": `#!/bin/bash
 echo 'Configuring HLB Node'
-# Custom logic here`),
+# Custom logic here`,
 			},
 		},
 	}
